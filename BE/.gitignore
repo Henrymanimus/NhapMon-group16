@@ -8,3 +8,8 @@ npm-debug.log*
 dev-server.log
 dev-server.err.log
 package-lock.json
+
+# Database internal files (dùng final_schema.sql thay thế)
+database/migrations/
+database/seeds/
+database/verify/

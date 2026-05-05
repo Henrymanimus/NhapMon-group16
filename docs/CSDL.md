@@ -19,8 +19,10 @@ erDiagram
         decimal TienCoc "Tiền cọc mặc định"
         nvarchar MoTa "Mô tả"
         nvarchar TienNghi "Tiện nghi"
-        nvarchar TrangThai "Trống / Đang thuê / Bảo trì"
+        nvarchar TrangThai "TRONG / DANG_THUE / BAO_TRI"
         varchar MaChuTro FK "Mã chủ trọ"
+        tinyint IsDeleted "Soft delete (0/1)"
+        datetime DeletedAt "Thời điểm xóa mềm"
     }
 
     NGUOITHUE {
@@ -43,16 +45,17 @@ erDiagram
         decimal TienThue "Tiền thuê/tháng"
         decimal TienCoc "Tiền cọc"
         nvarchar GhiChu "Ghi chú"
-        nvarchar TrangThai "Đang hiệu lực / Đã kết thúc / Đã hủy"
+        nvarchar TrangThai "DANG_HIEU_LUC / DA_KET_THUC / DA_HUY"
+        datetime NgayTao "Ngày tạo hợp đồng"
     }
 
     HOPDONG_NGUOITHUE {
         varchar MaHopDong PK, FK "Mã hợp đồng"
         varchar MaNguoiThue PK, FK "Mã người thuê"
-        nvarchar VaiTro "Đại diện / Ở cùng"
+        nvarchar VaiTro "DAI_DIEN / O_CUNG"
         date NgayThamGia "Ngày tham gia"
         date NgayRoiDi "Ngày rời đi"
-        nvarchar TrangThai "Đang ở / Đã rời"
+        nvarchar TrangThai "DANG_O / DA_ROI"
     }
 
     HOADON {
@@ -68,7 +71,7 @@ erDiagram
         decimal TienNuoc "Tiền nước"
         decimal TienThue "Tiền thuê"
         decimal TongTien "Tổng tiền"
-        nvarchar TrangThai "Đã thanh toán / Chưa thanh toán"
+        nvarchar TrangThai "DA_THANH_TOAN / CHUA_THANH_TOAN"
         date NgayLap "Ngày lập"
         date HanThanhToan "Hạn thanh toán"
         nvarchar GhiChu "Ghi chú"
