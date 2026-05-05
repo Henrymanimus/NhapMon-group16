@@ -1,0 +1,33 @@
+# ===== Node =====
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ===== Build outputs =====
+dist/
+build/
+out/
+
+# ===== Environment / secrets =====
+.env
+.env.local
+.env.*.local
+
+# ===== Logs =====
+*.log
+logs/
+dev-server.log
+dev-server.err.log
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+
+# ===== IDE =====
+.vscode/settings.json
+.idea/
+
+# ===== BMAD / AI planning artifacts (keep output docs, skip heavy config) =====
+_bmad/
