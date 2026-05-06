@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { Home, Lock, User, Eye, EyeOff, Info } from "lucide-react";
+import { Home, Lock, User, Eye, EyeOff } from "lucide-react";
 import { saveAuth } from "../../../lib/auth";
 import { apiFetch, ApiResponseError } from "../../../lib/api";
 
@@ -147,15 +147,6 @@ export function Login() {
             <div className="mb-6">
               <h2 className="text-gray-900 mb-1" style={{ fontSize: "1.5rem" }}>Đăng nhập</h2>
               <p className="text-gray-500 text-sm">Chào mừng trở lại! Vui lòng đăng nhập để tiếp tục.</p>
-            </div>
-
-            {/* Demo hint */}
-            <div className="flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2.5 mb-6">
-              <Info className="w-4 h-4 text-blue-500 shrink-0" />
-              <p className="text-xs text-blue-700">
-                Demo: username: <span className="font-semibold">chutro001</span> / password:{" "}
-                <span className="font-semibold">123456</span>
-              </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">

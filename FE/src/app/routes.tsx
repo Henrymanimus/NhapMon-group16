@@ -15,7 +15,8 @@ import { ContractForm } from "./components/pages/contracts/ContractForm";
 import { InvoicesList } from "./components/pages/invoices/InvoicesList";
 import { InvoiceDetail } from "./components/pages/invoices/InvoiceDetail";
 import { InvoiceForm } from "./components/pages/invoices/InvoiceForm";
-import { Reports } from "./components/pages/Reports";
+// TODO: Reports module — to be implemented in the future
+// import { Reports } from "./components/pages/Reports";
 import { Account } from "./components/pages/Account";
 
 export const router = createBrowserRouter([
@@ -47,7 +48,7 @@ export const router = createBrowserRouter([
       { path: "invoices/new", Component: InvoiceForm },
       { path: "invoices/:id", Component: InvoiceDetail },
       { path: "invoices/:id/edit", Component: InvoiceForm },
-      { path: "reports", Component: Reports },
+      // { path: "reports", Component: Reports }, // TODO: implement later
       { path: "account", Component: Account },
         ],
       },

@@ -565,7 +565,7 @@ export function Dashboard() {
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-5 text-white shadow-lg">
+        <div className="bg-blue-600 rounded-2xl p-5 text-white shadow-sm">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
               <DollarSign className="w-5 h-5 text-white" />
@@ -581,18 +581,7 @@ export function Dashboard() {
               <ArrowUpRight className="w-4 h-4" />
               <span>{revenueMetrics.changePct >= 0 ? "+" : ""}{revenueMetrics.changePct.toFixed(1)}% so với tháng trước</span>
             </div>
-            <div className="pt-3 border-t border-white/20">
-              <div className="flex items-center justify-between text-xs mb-2">
-                <span className="text-blue-200">Mục tiêu</span>
-                <span className="font-bold">{revenueMetrics.target.toFixed(1)}M</span>
-              </div>
-              <div className="h-2 bg-white/20 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-white/70 rounded-full"
-                  style={{ width: `${Math.min(100, revenueMetrics.target > 0 ? (revenueMetrics.current / revenueMetrics.target) * 100 : 0)}%` }}
-                />
-              </div>
-            </div>
+
           </div>
         </div>
       </div>

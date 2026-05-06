@@ -13,13 +13,13 @@ Single source of truth to track:
 Update this file at the end of each completed module to keep AI context stable and avoid hallucination/drift.
 
 ## Current Overall Status
-- Auth module: DONE (BE + FE integration)
+- Auth module: DONE (BE + FE integration, Account tab wired to real API, profile update + password change completed)
 - Rooms module: DONE and tested CRUD
 - Tenants module: DONE and tested CRUD + UI enhancements (sort by join date)
 - Contracts module: DONE (BE + FE integration) + UI enhancements (NgayTao column, sort by created date, auto-sort by status)
 - Invoices module: DONE (BE + FE integration to real DB + UI polish validated)
 - Dashboard: DONE (real API data, revenue strip horizontal layout, occupancy progress bar fixed, expiring threshold 10 days)
-- Reports: PARTIAL (UI skeleton)
+- Reports: DEFERRED — UI skeleton exists (`Reports.tsx`) but route + sidebar item commented out. Will be implemented in the future.
 
 ## Module Log
 
@@ -41,7 +41,25 @@ Update this file at the end of each completed module to keep AI context stable a
   - Success message is shown.
 
 ## What We Are Doing Now
-- Moving to Reports polish (next).
+- Reports deferred. All core modules complete.
+- Next: final polish / presentation prep.
+
+### [DONE] Auth / Account
+- Scope:
+  - Login with real API
+  - Load current landlord profile from API
+  - Update profile information in Account tab
+  - Change password with current password check
+- Completed:
+  - BE: added `/api/auth/me`, `/api/auth/profile`, `/api/auth/change-password`
+  - BE: password change now verifies old password and hashes new password with `bcrypt`
+  - FE: Account tab rewired to real API
+  - FE: profile edit/save working with validation and success/error states
+  - FE: change-password modal simplified to old password + new password + confirm password
+  - FE: password modal backdrop updated to blur current page instead of dark overlay
+- Validation:
+  - Manual flow tested: Login → Account → edit landlord name → save → backend data updated
+  - Password change flow tested and confirmed working
 
 ### [DONE] Dashboard
 - Scope:

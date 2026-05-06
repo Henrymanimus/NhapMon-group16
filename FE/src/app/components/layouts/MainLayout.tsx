@@ -21,7 +21,7 @@ const menuItems = [
   { path: "/tenants", icon: Users, label: "Người thuê" },
   { path: "/contracts", icon: FileText, label: "Hợp đồng" },
   { path: "/invoices", icon: Receipt, label: "Hóa đơn" },
-  { path: "/reports", icon: BarChart3, label: "Báo cáo" },
+  // { path: "/reports", icon: BarChart3, label: "Báo cáo" }, // TODO: implement later
   { path: "/account", icon: User, label: "Tài khoản" },
 ];
 

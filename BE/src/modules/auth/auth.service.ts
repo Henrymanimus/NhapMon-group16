@@ -121,3 +121,37 @@ export async function getCurrentUser(maChuTro: string): Promise<{
     diaChi: user.DiaChi,
   };
 }
+
+export async function updateProfile(
+  maChuTro: string,
+  data: { hoTen: string; email?: string | null; soDienThoai?: string | null; diaChi?: string | null }
+): Promise<{ maChuTro: string; tenDangNhap: string; hoTen: string; soDienThoai: string | null; email: string | null; diaChi: string | null }> {
+  await pool.query(
+    `UPDATE CHUTRO SET HoTen = ?, Email = ?, SoDienThoai = ?, DiaChi = ? WHERE MaChuTro = ?`,
+    [data.hoTen, data.email ?? null, data.soDienThoai ?? null, data.diaChi ?? null, maChuTro]
+  );
+  return getCurrentUser(maChuTro);
+}
+
+export async function changePassword(
+  maChuTro: string,
+  matKhauCu: string,
+  matKhauMoi: string
+): Promise<void> {
+  const [rows] = await pool.query<ChuTroRow[]>(
+    `SELECT MaChuTro, TenDangNhap, MatKhau, HoTen, SoDienThoai, Email, DiaChi FROM CHUTRO WHERE MaChuTro = ? LIMIT 1`,
+    [maChuTro]
+  );
+  const user = rows[0];
+  if (!user) {
+    throw new ApiError(404, "USER_NOT_FOUND", "User not found");
+  }
+
+  const ok = await verifyPassword(matKhauCu, user.MatKhau);
+  if (!ok) {
+    throw new ApiError(400, "WRONG_PASSWORD", "Mật khẩu cũ không đúng");
+  }
+
+  const hashed = await bcrypt.hash(matKhauMoi, 10);
+  await pool.query(`UPDATE CHUTRO SET MatKhau = ? WHERE MaChuTro = ?`, [hashed, maChuTro]);
+}
