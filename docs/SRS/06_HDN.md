@@ -53,6 +53,7 @@ Các nguyên tắc nghiệp vụ cần áp dụng:
 | 12      | Hóa đơn đã thanh toán được tính vào doanh thu                                              |
 | 13      | Hóa đơn chưa thanh toán được tính vào công nợ                                              |
 | 14      | Hạn thanh toán phải nằm trong khoảng **NgayLap đến NgayLap + 4** (tối đa 5 ngày từ ngày lập, bao gồm ngày lập). Hệ thống gợi ý sẵn 5 lựa chọn ngày, người dùng không thể chọn ngày ngoài khoảng này. |
+| 15      | Nếu hợp đồng chưa có hóa đơn, chủ trọ nhập chỉ số điện/nước cũ và mới như bình thường. Từ hóa đơn thứ 2 trở đi, chỉ số mới của hóa đơn trước là chỉ số cũ của hóa đơn sau. |
 
 **4\. Danh sách chức năng con**
 
@@ -68,6 +69,7 @@ Các nguyên tắc nghiệp vụ cần áp dụng:
 | HĐN-08           | Tính tổng tiền hóa đơn | Tự động tính tiền thuê, điện, nước và tổng tiền         |
 | HĐN-09           | Xem hóa đơn quá hạn    | Xác định hóa đơn chưa thanh toán đã quá hạn             |
 | HĐN-10           | Xem công nợ            | Tổng hợp hóa đơn chưa thanh toán                        |
+| HĐN-11           | Preview hóa đơn PDF    | Xem trước phiếu thông báo tiền phòng trọ ở dạng PDF     |
 
 **5\. ERD liên quan**
 
@@ -520,13 +522,17 @@ Sau khi chọn hợp đồng, hệ thống hiển thị preview:
   - người đại diện
   - số người đang ở
   - tiền thuê
+  - số hóa đơn đã tồn tại
+  - chỉ số điện/nước mới gần nhất nếu hợp đồng đã có hóa đơn
 - Chủ trọ chọn tháng/năm hóa đơn.
 - Chủ trọ nhập ngày lập. Hệ thống tự động hiển thị 5 nút gợi ý hạn thanh toán (NgayLap, NgayLap+1, …, NgayLap+4). Chủ trọ chọn một trong 5 ngày đó; không thể chọn ngày nằm ngoài khoảng này.
-- Chủ trọ nhập chỉ số điện cũ, chỉ số điện mới, đơn giá điện.
+- Nếu đây là hóa đơn đầu tiên của hợp đồng, chủ trọ nhập chỉ số điện cũ, chỉ số điện mới, đơn giá điện.
+- Nếu hợp đồng đã có hóa đơn trước đó, hệ thống tự điền và khóa chỉ số điện cũ bằng ChiSoDienMoi của hóa đơn mới nhất; chủ trọ chỉ nhập chỉ số điện mới và đơn giá điện.
 - Hệ thống tính:
   - số điện sử dụng
   - tiền điện
-- Chủ trọ nhập chỉ số nước cũ, chỉ số nước mới, đơn giá nước.
+- Nếu đây là hóa đơn đầu tiên của hợp đồng, chủ trọ nhập chỉ số nước cũ, chỉ số nước mới, đơn giá nước.
+- Nếu hợp đồng đã có hóa đơn trước đó, hệ thống tự điền và khóa chỉ số nước cũ bằng ChiSoNuocMoi của hóa đơn mới nhất; chủ trọ chỉ nhập chỉ số nước mới và đơn giá nước.
 - Hệ thống tính:
 
 - số nước sử dụng
@@ -577,8 +583,10 @@ TongTien = TienThue + TienDien + TienNuoc
 | Hạn thanh toán    | Bắt buộc; phải nằm trong đoạn \[NgayLap, NgayLap + 4\] (tối đa 5 ngày từ ngày lập) |
 | Tiền thuê         | Bắt buộc, không âm                                   |
 | Chỉ số điện mới   | Phải lớn hơn hoặc bằng chỉ số điện cũ                |
+| Chỉ số điện cũ    | Từ hóa đơn thứ 2 trở đi phải bằng chỉ số điện mới của hóa đơn trước |
 | Đơn giá điện      | Phải là số không âm                                  |
 | Chỉ số nước mới   | Phải lớn hơn hoặc bằng chỉ số nước cũ                |
+| Chỉ số nước cũ    | Từ hóa đơn thứ 2 trở đi phải bằng chỉ số nước mới của hóa đơn trước |
 | Đơn giá nước      | Phải là số không âm                                  |
 | Tổng tiền         | Tự tính, không nhập tay                              |
 
@@ -845,7 +853,9 @@ WHERE TrangThai = N'Đã thanh toán';
 | Ngày lập             | Bắt buộc                                    |
 | Hạn thanh toán       | Bắt buộc                                    |
 | Chỉ số điện          | Chỉ số mới ≥ chỉ số cũ                      |
+| Chỉ số điện cũ       | Từ hóa đơn thứ 2 trở đi lấy từ chỉ số điện mới của hóa đơn trước |
 | Chỉ số nước          | Chỉ số mới ≥ chỉ số cũ                      |
+| Chỉ số nước cũ       | Từ hóa đơn thứ 2 trở đi lấy từ chỉ số nước mới của hóa đơn trước |
 | Đơn giá điện/nước UI | Phải là số không âm                         |
 | Tiền thuê            | Phải là số không âm                         |
 | Tổng tiền            | Tự tính, không cho nhập tay                 |
@@ -862,7 +872,9 @@ WHERE TrangThai = N'Đã thanh toán';
 | Chưa chọn hợp đồng                   | Vui lòng chọn hợp đồng                                   |
 | Hóa đơn đã tồn tại                   | Hóa đơn của hợp đồng này trong tháng/năm đã tồn tại      |
 | Chỉ số điện không hợp lệ             | Chỉ số điện mới phải lớn hơn hoặc bằng chỉ số điện cũ    |
+| Chỉ số điện cũ không hợp lệ          | Chỉ số điện cũ phải bằng chỉ số điện mới của hóa đơn trước |
 | Chỉ số nước không hợp lệ             | Chỉ số nước mới phải lớn hơn hoặc bằng chỉ số nước cũ    |
+| Chỉ số nước cũ không hợp lệ          | Chỉ số nước cũ phải bằng chỉ số nước mới của hóa đơn trước |
 | Hạn thanh toán trống                 | Vui lòng nhập hạn thanh toán                             |
 | Không được sửa hóa đơn đã thanh toán | Hóa đơn đã thanh toán không thể chỉnh sửa                |
 | Không thể xác nhận                   | Chỉ hóa đơn chưa thanh toán mới được xác nhận thanh toán |
@@ -874,10 +886,46 @@ WHERE TrangThai = N'Đã thanh toán';
 | ---------- | ---------------------------------- | ----------------------------- |
 | GET        | /api/invoices                      | Lấy danh sách hóa đơn         |
 | GET        | /api/invoices/{id}                 | Xem chi tiết hóa đơn          |
+| GET        | /api/invoices/{id}/preview.pdf     | Sinh PDF preview hóa đơn      |
 | POST       | /api/invoices                      | Lập hóa đơn mới               |
 | PUT        | /api/invoices/{id}                 | Cập nhật hóa đơn              |
 | PUT        | /api/invoices/{id}/confirm-payment | Xác nhận thanh toán           |
 | GET        | /api/invoices/overdue              | Lấy danh sách hóa đơn quá hạn |
+
+**20\. HĐN-11 - Preview hóa đơn PDF**
+
+**20.1. Mục tiêu**
+
+Cho phép chủ trọ xem trước hóa đơn ở dạng PDF trước khi in/gửi cho người thuê. PDF được sinh theo template `Template_Hoa_Don_K57.docx`.
+
+**20.2. UI liên quan**
+
+Tại màn hình **Chi tiết hóa đơn**, header có nút **Preview hóa đơn** nằm bên trái nút **Xác nhận thanh toán**. Khi nhấn, hệ thống mở modal preview PDF gồm:
+
+- Tiêu đề **Preview hóa đơn**
+- Mã hóa đơn
+- Nút **Mở PDF** để mở file ở tab mới
+- Khung xem PDF trực tiếp
+- Nút đóng modal
+
+**20.3. Nội dung PDF**
+
+PDF hiển thị các thông tin chính theo template:
+
+- Mã hóa đơn, ngày lập
+- Hợp đồng, phòng, đại diện, số điện thoại
+- Kỳ hóa đơn, hạn thanh toán
+- Chi tiết tiền thuê phòng, tiền điện, tiền nước
+- Tổng tiền
+- Trạng thái thanh toán, ghi chú
+- Liên hệ chủ trọ
+- Khu vực ký tên của chủ trọ và người thuê
+
+**20.4. API**
+
+GET /api/invoices/{id}/preview.pdf
+
+Backend kiểm tra hóa đơn thuộc chủ trọ hiện tại, lấy dữ liệu từ HoaDon, HopDong, NhaTro, NguoiThue và ChuTro, sau đó sinh PDF trả về dạng `application/pdf`.
 | GET        | /api/contracts/{id}/invoices       | Lấy hóa đơn theo hợp đồng     |
 
 **20\. Kết luận**

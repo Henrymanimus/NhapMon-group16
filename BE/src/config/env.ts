@@ -3,6 +3,22 @@ import { z } from "zod";
 
 dotenv.config();
 
+const optionalTrimmedString = z.preprocess((value) => {
+  if (typeof value !== "string") {
+    return value;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}, z.string().optional());
+
+const optionalNumberWithDefault = (defaultValue: number) =>
+  z.preprocess((value) => {
+    if (value === undefined || value === null || value === "") {
+      return undefined;
+    }
+    return value;
+  }, z.coerce.number().int().positive().default(defaultValue));
+
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().int().positive().default(4000),
@@ -17,6 +33,15 @@ const envSchema = z.object({
     .string()
     .transform((value) => value.toLowerCase() === "true")
     .default("false"),
+  SMTP_HOST: optionalTrimmedString,
+  SMTP_PORT: optionalNumberWithDefault(587),
+  SMTP_SECURE: z
+    .string()
+    .transform((value) => value.toLowerCase() === "true")
+    .default("false"),
+  SMTP_USER: optionalTrimmedString,
+  SMTP_PASS: optionalTrimmedString,
+  SMTP_FROM: optionalTrimmedString,
 });
 
 const parsed = envSchema.safeParse(process.env);

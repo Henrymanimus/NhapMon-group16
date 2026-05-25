@@ -438,10 +438,6 @@ export function ContractForm() {
                 </tbody>
               </table>
             </div>
-            <div className="text-xs text-blue-700 bg-blue-50 border border-blue-100 rounded-lg p-3 flex items-start gap-2">
-              <Info className="w-4 h-4 mt-0.5" />
-              Người đại diện bắt buộc phải nằm trong danh sách người thuê theo SRS.
-            </div>
           </div>
 
           <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-4">

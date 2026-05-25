@@ -45,6 +45,11 @@ type CountRow = RowDataPacket & {
   total: number;
 };
 
+type ContractReferenceRow = RowDataPacket & {
+  MaHopDong: string;
+  TrangThai: "DANG_HIEU_LUC" | "DA_KET_THUC" | "DA_HUY";
+};
+
 export type CreateTenantInput = {
   hoTen: string;
   soDienThoai: string;
@@ -117,6 +122,19 @@ async function getContractParticipationCount(maNguoiThue: string): Promise<numbe
       SELECT COUNT(*) AS total
       FROM HOPDONG_NGUOITHUE
       WHERE MaNguoiThue = ?
+    `,
+    [maNguoiThue]
+  );
+  return Number(rows[0]?.total ?? 0);
+}
+
+async function getStayingParticipationCount(maNguoiThue: string): Promise<number> {
+  const [rows] = await pool.query<CountRow[]>(
+    `
+      SELECT COUNT(*) AS total
+      FROM HOPDONG_NGUOITHUE hdnt
+      WHERE hdnt.MaNguoiThue = ?
+        AND hdnt.TrangThai = 'DANG_O'
     `,
     [maNguoiThue]
   );
@@ -372,21 +390,106 @@ export async function updateTenant(maNguoiThue: string, input: UpdateTenantInput
 export async function deleteTenant(maNguoiThue: string) {
   await ensureTenantExists(maNguoiThue);
 
-  const participatedCount = await getContractParticipationCount(maNguoiThue);
-  if (participatedCount > 0) {
+  const stayingCount = await getStayingParticipationCount(maNguoiThue);
+  if (stayingCount > 0) {
     throw new ApiError(
       409,
-      "TENANT_HAS_CONTRACTS",
-      "Không thể xóa người thuê đã từng tham gia hợp đồng"
+      "TENANT_ACTIVE_IN_CONTRACT",
+      "Không thể xóa người thuê đang ở"
     );
   }
 
-  await pool.execute<ResultSetHeader>(
-    `
-      DELETE FROM NGUOITHUE
-      WHERE MaNguoiThue = ?
-      LIMIT 1
-    `,
-    [maNguoiThue]
-  );
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    const [representativeContracts] = await conn.query<ContractReferenceRow[]>(
+      `
+        SELECT MaHopDong, TrangThai
+        FROM HOPDONG
+        WHERE MaNguoiDaiDien = ?
+      `,
+      [maNguoiThue]
+    );
+
+    const hasActiveRepresentativeContract = representativeContracts.some(
+      (contract) => contract.TrangThai === "DANG_HIEU_LUC"
+    );
+    if (hasActiveRepresentativeContract) {
+      throw new ApiError(
+        409,
+        "TENANT_ACTIVE_IN_CONTRACT",
+        "Không thể xóa người thuê đang là đại diện hợp đồng hiệu lực"
+      );
+    }
+
+    const endedRepresentativeContractIds = representativeContracts.map(
+      (contract) => contract.MaHopDong
+    );
+
+    if (endedRepresentativeContractIds.length > 0) {
+      await conn.query(
+        `
+          UPDATE HOPDONG_NGUOITHUE
+          SET TrangThai = 'DA_ROI',
+              NgayRoiDi = COALESCE(NgayRoiDi, (
+                SELECT hd.NgayKetThuc
+                FROM HOPDONG hd
+                WHERE hd.MaHopDong = HOPDONG_NGUOITHUE.MaHopDong
+              ))
+          WHERE MaHopDong IN (?)
+        `,
+        [endedRepresentativeContractIds]
+      );
+
+      await conn.query(
+        `
+          DELETE FROM HOADON
+          WHERE MaHopDong IN (?)
+        `,
+        [endedRepresentativeContractIds]
+      );
+
+      await conn.query(
+        `
+          DELETE FROM HOPDONG_NGUOITHUE
+          WHERE MaHopDong IN (?)
+        `,
+        [endedRepresentativeContractIds]
+      );
+
+      await conn.query(
+        `
+          DELETE FROM HOPDONG
+          WHERE MaHopDong IN (?)
+        `,
+        [endedRepresentativeContractIds]
+      );
+    }
+
+    await conn.execute<ResultSetHeader>(
+      `
+        DELETE FROM HOPDONG_NGUOITHUE
+        WHERE MaNguoiThue = ?
+          AND TrangThai = 'DA_ROI'
+      `,
+      [maNguoiThue]
+    );
+
+    await conn.execute<ResultSetHeader>(
+      `
+        DELETE FROM NGUOITHUE
+        WHERE MaNguoiThue = ?
+        LIMIT 1
+      `,
+      [maNguoiThue]
+    );
+
+    await conn.commit();
+  } catch (err) {
+    await conn.rollback();
+    throw err;
+  } finally {
+    conn.release();
+  }
 }

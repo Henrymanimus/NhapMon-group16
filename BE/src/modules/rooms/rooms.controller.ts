@@ -3,6 +3,7 @@ import { ApiError } from "../../errors/api-error";
 import {
   createRoom,
   deleteRoom,
+  generateNextRoomCode,
   getRoom,
   listRooms,
   updateRoom,
@@ -41,6 +42,16 @@ export const createRoomHandler: RequestHandler = async (req, res, next) => {
     const maChuTro = requireOwner(req);
     const item = await createRoom(req.body, maChuTro);
     res.status(201).json({ item });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getNextRoomCodeHandler: RequestHandler = async (req, res, next) => {
+  try {
+    const maChuTro = requireOwner(req);
+    const nextCode = await generateNextRoomCode(maChuTro);
+    res.json({ nextCode });
   } catch (err) {
     next(err);
   }

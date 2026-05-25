@@ -52,47 +52,66 @@ export function RoomForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!isEdit || !decodedId) {
-      setLoading(false);
-      return;
-    }
-
     let cancelled = false;
     setLoading(true);
     setSubmitError(null);
 
-    apiFetch<{ item: RoomDto }>(`/rooms/${encodeURIComponent(decodedId)}`)
-      .then((data) => {
-        if (cancelled) {
-          return;
-        }
-        const dto = data.item;
-        setFormData({
-          code: dto.maNhaTro,
-          name: dto.tenNhaTro,
-          address: dto.diaChi,
-          area: String(dto.dienTich),
-          price: String(dto.giaThue),
-          deposit: String(dto.tienCoc),
-          status: dto.trangThai === "BAO_TRI" ? STATUS_TO_LABEL.BAO_TRI : STATUS_TO_LABEL.TRONG,
-          description: dto.moTa ?? "",
-          amenities: dto.tienNghi ?? "",
+    if (isEdit && decodedId) {
+      apiFetch<{ item: RoomDto }>(`/rooms/${encodeURIComponent(decodedId)}`)
+        .then((data) => {
+          if (cancelled) {
+            return;
+          }
+          const dto = data.item;
+          setFormData({
+            code: dto.maNhaTro,
+            name: dto.tenNhaTro,
+            address: dto.diaChi,
+            area: String(dto.dienTich),
+            price: String(dto.giaThue),
+            deposit: String(dto.tienCoc),
+            status: dto.trangThai === "BAO_TRI" ? STATUS_TO_LABEL.BAO_TRI : STATUS_TO_LABEL.TRONG,
+            description: dto.moTa ?? "",
+            amenities: dto.tienNghi ?? "",
+          });
+        })
+        .catch((err) => {
+          if (!cancelled) {
+            setSubmitError(
+              err instanceof ApiResponseError
+                ? err.message
+                : "Không thể tải thông tin phòng. Vui lòng thử lại."
+            );
+          }
+        })
+        .finally(() => {
+          if (!cancelled) {
+            setLoading(false);
+          }
         });
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          setSubmitError(
-            err instanceof ApiResponseError
-              ? err.message
-              : "Không thể tải thông tin phòng. Vui lòng thử lại."
-          );
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      });
+    } else {
+      apiFetch<{ nextCode: string }>("/rooms/code/next")
+        .then((data) => {
+          if (cancelled) {
+            return;
+          }
+          setFormData((prev) => ({ ...prev, code: data.nextCode }));
+        })
+        .catch((err) => {
+          if (!cancelled) {
+            setSubmitError(
+              err instanceof ApiResponseError
+                ? err.message
+                : "Không thể tải mã phòng tự động. Vui lòng thử lại."
+            );
+          }
+        })
+        .finally(() => {
+          if (!cancelled) {
+            setLoading(false);
+          }
+        });
+    }
 
     return () => {
       cancelled = true;
@@ -107,7 +126,6 @@ export function RoomForm() {
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
-    if (!formData.code.trim()) newErrors.code = "Vui lòng nhập mã phòng";
     if (!formData.name.trim()) newErrors.name = "Vui lòng nhập tên phòng";
     if (!formData.address.trim()) newErrors.address = "Vui lòng nhập địa chỉ";
     if (!formData.area.trim()) newErrors.area = "Vui lòng nhập diện tích";
@@ -148,19 +166,24 @@ export function RoomForm() {
           }),
         });
       } else {
+        const roomPayload: Record<string, unknown> = {
+          tenNhaTro: formData.name.trim(),
+          diaChi: formData.address.trim(),
+          dienTich: Number(formData.area),
+          giaThue: Number(formData.price),
+          tienCoc: Number(formData.deposit),
+          moTa: formData.description.trim() || null,
+          tienNghi: formData.amenities.trim() || null,
+          trangThai: LABEL_TO_STATUS[formData.status as "Trống" | "Bảo trì"],
+        };
+
+        if (formData.code.trim()) {
+          roomPayload.maNhaTro = formData.code.trim();
+        }
+
         await apiFetch<{ item: RoomDto }>("/rooms", {
           method: "POST",
-          body: JSON.stringify({
-            maNhaTro: formData.code.trim(),
-            tenNhaTro: formData.name.trim(),
-            diaChi: formData.address.trim(),
-            dienTich: Number(formData.area),
-            giaThue: Number(formData.price),
-            tienCoc: Number(formData.deposit),
-            moTa: formData.description.trim() || null,
-            tienNghi: formData.amenities.trim() || null,
-            trangThai: LABEL_TO_STATUS[formData.status as "Trống" | "Bảo trì"],
-          }),
+          body: JSON.stringify(roomPayload),
         });
       }
 
@@ -176,8 +199,8 @@ export function RoomForm() {
     }
   };
 
-  const inputClass = (field: string) =>
-    `w-full px-4 py-2.5 border ${errors[field] ? "border-red-400 bg-red-50" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition-colors`;
+  const inputClass = (field: string, disabled = false) =>
+    `w-full px-4 py-2.5 border ${errors[field] ? "border-red-400 bg-red-50" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition-colors ${disabled ? "bg-gray-100 text-gray-500 cursor-not-allowed" : "bg-white"}`;
 
   return (
     <div className="space-y-6">
@@ -225,9 +248,15 @@ export function RoomForm() {
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   Mã phòng <span className="text-red-500">*</span>
                 </label>
-                <input type="text" name="code" value={formData.code} onChange={handleChange}
-                  disabled={isEdit}
-                  className={inputClass("code")} placeholder="VD: A101" />
+                <input type="text" name="code" value={formData.code}
+                  readOnly
+                  disabled
+                  className={inputClass("code", true)}
+                  placeholder="Mã phòng tự động"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Mã phòng sẽ được cấp tự động theo định dạng <span className="font-semibold">NT001, NT002, NT003...</span>
+                </p>
                 {errors.code && <p className="mt-1 text-xs text-red-500">{errors.code}</p>}
               </div>
 

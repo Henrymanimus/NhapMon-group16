@@ -90,6 +90,8 @@ CREATE TABLE HOPDONG (
   GhiChu          TEXT,
   TrangThai       ENUM('DANG_HIEU_LUC','DA_KET_THUC','DA_HUY') NOT NULL,
   NgayTao         DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  DaKy            TINYINT(1)    NOT NULL DEFAULT 0,
+  NgayKy          DATETIME      NULL,
   PRIMARY KEY (MaHopDong),
   CONSTRAINT fk_hopdong_daidien
     FOREIGN KEY (MaNguoiDaiDien) REFERENCES NGUOITHUE(MaNguoiThue)
@@ -188,6 +190,19 @@ BEFORE UPDATE ON HOPDONG
 FOR EACH ROW
 BEGIN
   DECLARE v_room_status VARCHAR(20);
+
+  IF OLD.DaKy = 1
+    AND (
+      NOT (OLD.MaNguoiDaiDien <=> NEW.MaNguoiDaiDien)
+      OR NOT (OLD.MaNhaTro <=> NEW.MaNhaTro)
+      OR NOT (OLD.NgayBatDau <=> NEW.NgayBatDau)
+      OR NOT (OLD.TienThue <=> NEW.TienThue)
+      OR NOT (OLD.TienCoc <=> NEW.TienCoc)
+    )
+  THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Signed contract cannot be edited.';
+  END IF;
+
   IF NEW.TrangThai = 'DANG_HIEU_LUC' THEN
     SELECT TrangThai INTO v_room_status FROM NHATRO WHERE MaNhaTro = NEW.MaNhaTro FOR UPDATE;
     IF EXISTS (SELECT 1 FROM HOPDONG WHERE MaNhaTro = NEW.MaNhaTro AND TrangThai = 'DANG_HIEU_LUC' AND MaHopDong <> NEW.MaHopDong) THEN
@@ -299,15 +314,13 @@ BEGIN
   END IF;
 END $$
 
--- 8.8 Không cho xóa dòng người đại diện khỏi HOPDONG_NGUOITHUE
+-- 8.8 Không cho xóa người thuê khỏi HOPDONG_NGUOITHUE khi người thuê đang ở
 CREATE TRIGGER trg_hdnt_before_delete
 BEFORE DELETE ON HOPDONG_NGUOITHUE
 FOR EACH ROW
 BEGIN
-  DECLARE v_rep VARCHAR(20);
-  SELECT MaNguoiDaiDien INTO v_rep FROM HOPDONG WHERE MaHopDong = OLD.MaHopDong;
-  IF OLD.MaNguoiThue = v_rep THEN
-    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Representative row cannot be deleted from HOPDONG_NGUOITHUE.';
+  IF OLD.TrangThai = 'DANG_O' THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Cannot delete tenant participation while tenant is staying.';
   END IF;
 END $$
 

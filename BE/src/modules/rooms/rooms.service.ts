@@ -382,7 +382,34 @@ export async function getRoom(maNhaTro: string, maChuTro: string) {
   };
 }
 
+type MaxRoomSuffixRow = RowDataPacket & {
+  maxSuffix: number | null;
+};
+
+export async function generateNextRoomCode(maChuTro: string) {
+  const [rows] = await pool.query<MaxRoomSuffixRow[]>(
+    `
+      SELECT MAX(CAST(SUBSTRING(MaNhaTro, 3) AS UNSIGNED)) AS maxSuffix
+      FROM NHATRO
+      WHERE MaChuTro = ?
+        AND MaNhaTro REGEXP '^NT[0-9]{3}$'
+    `,
+    [maChuTro]
+  );
+
+  const maxSuffix = Number(rows[0]?.maxSuffix ?? 0);
+  const nextSuffix = maxSuffix + 1;
+  return `NT${String(nextSuffix).padStart(3, "0")}`;
+}
+
 export async function createRoom(input: CreateRoomInput, maChuTro: string) {
+  let maNhaTro = input.maNhaTro;
+  const generatedCode = !maNhaTro;
+
+  if (!maNhaTro) {
+    maNhaTro = await generateNextRoomCode(maChuTro);
+  }
+
   const [existingRows] = await pool.query<ExistingRoomStateRow[]>(
     `
       SELECT MaNhaTro, MaChuTro, IsDeleted
@@ -390,7 +417,7 @@ export async function createRoom(input: CreateRoomInput, maChuTro: string) {
       WHERE MaNhaTro = ?
       LIMIT 1
     `,
-    [input.maNhaTro]
+    [maNhaTro]
   );
 
   const existing = existingRows[0];
@@ -425,23 +452,23 @@ export async function createRoom(input: CreateRoomInput, maChuTro: string) {
         input.moTa ?? null,
         input.tienNghi ?? null,
         input.trangThai ?? "TRONG",
-        input.maNhaTro,
+        maNhaTro,
         maChuTro,
       ]
     );
 
-    const restored = await getRoom(input.maNhaTro, maChuTro);
+    const restored = await getRoom(maNhaTro, maChuTro);
     return restored.item;
   }
 
-  try {
+  const insertRoom = async (roomCode: string) => {
     await pool.execute<ResultSetHeader>(
       `
         INSERT INTO NHATRO (MaNhaTro, TenNhaTro, DiaChi, DienTich, GiaThue, TienCoc, MoTa, TienNghi, TrangThai, MaChuTro)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
-        input.maNhaTro,
+        roomCode,
         input.tenNhaTro,
         input.diaChi,
         input.dienTich,
@@ -453,14 +480,31 @@ export async function createRoom(input: CreateRoomInput, maChuTro: string) {
         maChuTro,
       ]
     );
+  };
+
+  try {
+    await insertRoom(maNhaTro);
   } catch (err: any) {
     if (err?.code === "ER_DUP_ENTRY") {
-      throw new ApiError(409, "ROOM_DUPLICATE", "Mã phòng đã tồn tại");
+      if (generatedCode) {
+        maNhaTro = await generateNextRoomCode(maChuTro);
+        try {
+          await insertRoom(maNhaTro);
+        } catch (err2: any) {
+          if (err2?.code === "ER_DUP_ENTRY") {
+            throw new ApiError(409, "ROOM_DUPLICATE", "Mã phòng đã tồn tại");
+          }
+          throw err2;
+        }
+      } else {
+        throw new ApiError(409, "ROOM_DUPLICATE", "Mã phòng đã tồn tại");
+      }
+    } else {
+      throw err;
     }
-    throw err;
   }
 
-  const result = await getRoom(input.maNhaTro, maChuTro);
+  const result = await getRoom(maNhaTro, maChuTro);
   return result.item;
 }
 

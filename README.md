@@ -13,7 +13,7 @@ Dự án gồm hai phần độc lập:
 
 - **Node.js** ≥ 18 (Windows: dùng bản cài đặt từ [nodejs.org](https://nodejs.org), **không** dùng qua MSYS/WSL)
 - **MySQL** 8.x đang chạy trên máy
-- **pnpm** (FE) — cài một lần: `npm install -g pnpm`
+- **npm** đi kèm Node.js
 
 ---
 
@@ -46,6 +46,15 @@ DB_PASSWORD=your_db_password
 DB_NAME=rental_house_management
 
 JWT_SECRET=change_me_to_a_long_random_secret
+JWT_EXPIRES_IN=8h
+
+# Chỉ dùng nếu cần gửi OTP quên mật khẩu qua email
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=
+SMTP_PASS=
+SMTP_FROM=
 ```
 
 ### 2.2 Tạo database
@@ -63,7 +72,6 @@ SOURCE database/final_schema.sql;
 ### 2.3 Cài dependencies và khởi động
 
 ```bash
-cd BE
 npm install
 npm run dev
 ```
@@ -80,7 +88,7 @@ Kiểm tra: `GET http://localhost:4000/api/health` → `{ "status": "ok" }`
 
 ```bash
 cd FE
-pnpm install
+npm install
 ```
 
 ### 3.2 Cấu hình API URL (tuỳ chọn)
@@ -93,24 +101,13 @@ const API_BASE = "http://localhost:4000";
 
 ### 3.3 Khởi động
 
-> **Lưu ý (Windows):** Phải đặt biến `DISABLE_TAILWIND=1` để tránh lỗi `napi-sys panic` khi dùng `@tailwindcss/vite`.
-
-**Windows (CMD):**
-```cmd
-set DISABLE_TAILWIND=1 && pnpm run dev
-```
-
-**Windows (PowerShell):**
-```powershell
-$env:DISABLE_TAILWIND="1"; pnpm run dev
-```
-
-**Linux/macOS:**
 ```bash
-pnpm run dev
+npm run dev
 ```
 
 Ứng dụng chạy tại: `http://localhost:5173`
+
+Trang đầu tiên khi mở `http://localhost:5173/` là màn hình đăng nhập. Sau khi đăng nhập thành công, hệ thống chuyển đến `/dashboard`.
 
 ---
 
@@ -155,5 +152,22 @@ project/
 | `cd BE && npm run dev` | Chạy BE ở chế độ watch |
 | `cd BE && npm run build` | Build BE ra `dist/` |
 | `cd BE && npm run typecheck` | Kiểm tra TypeScript |
-| `cd FE && pnpm run dev` | Chạy FE dev server |
-| `cd FE && pnpm run build` | Build FE ra `dist/` |
+| `cd FE && npm run dev` | Chạy FE dev server |
+| `cd FE && npm run build` | Build FE ra `dist/` |
+
+---
+
+## 7. Chức năng đã tích hợp
+
+- Đăng nhập, đăng ký tài khoản chủ trọ, quên mật khẩu bằng OTP email.
+- Quản lý tài khoản chủ trọ, đổi mật khẩu.
+- Quản lý phòng trọ, người thuê, hợp đồng, hóa đơn.
+- Hợp đồng:
+  - Preview hợp đồng PDF trước khi in.
+  - Xác nhận ký hợp đồng, khóa chỉnh sửa sau khi ký.
+  - Xóa hợp đồng chưa ký.
+- Hóa đơn:
+  - Lập hóa đơn theo hợp đồng.
+  - Tự lấy chỉ số điện/nước cũ từ hóa đơn trước nếu hợp đồng đã có hóa đơn.
+  - Preview hóa đơn PDF khổ K57.
+- Dashboard dùng dữ liệu thật từ API.

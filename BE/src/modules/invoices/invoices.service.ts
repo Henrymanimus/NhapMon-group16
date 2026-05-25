@@ -61,6 +61,50 @@ type ContractOptionRow = RowDataPacket & {
   NgayKetThuc: Date | null;
   TrangThai: string;
   SoNguoiThue: number;
+  SoHoaDon: number;
+  ChiSoDienMoiGanNhat: number | null;
+  ChiSoNuocMoiGanNhat: number | null;
+};
+
+type PreviousMeterRow = RowDataPacket & {
+  ChiSoDienMoi: number;
+  ChiSoNuocMoi: number;
+};
+
+type InvoicePrintRow = InvoiceDetailRow & {
+  ChuTro_HoTen: string;
+  ChuTro_SoDienThoai: string;
+};
+
+export type InvoicePrintData = {
+  maHoaDon: string;
+  maHopDong: string;
+  thang: number;
+  nam: number;
+  ngayLap: Date;
+  hanThanhToan: Date | null;
+  ghiChu: string | null;
+  trangThai: InvoiceStatus;
+  tienThue: number;
+  chiSoDienCu: number;
+  chiSoDienMoi: number;
+  tienDien: number;
+  chiSoNuocCu: number;
+  chiSoNuocMoi: number;
+  tienNuoc: number;
+  tongTien: number;
+  phong: {
+    maNhaTro: string;
+    tenNhaTro: string;
+  };
+  nguoiDaiDien: {
+    hoTen: string;
+    soDienThoai: string;
+  };
+  chuTro: {
+    hoTen: string;
+    soDienThoai: string;
+  };
 };
 
 // ---------- Helper ----------
@@ -268,6 +312,84 @@ export async function getInvoice(maHoaDon: string, maChuTro: string) {
   };
 }
 
+export async function getInvoicePrintData(maHoaDon: string, maChuTro: string): Promise<InvoicePrintData> {
+  const sql = `
+    SELECT
+      hdon.MaHoaDon,
+      hdon.MaHopDong,
+      hdon.Thang,
+      hdon.Nam,
+      hdon.NgayLap,
+      hdon.HanThanhToan,
+      hdon.GhiChu,
+      hdon.TrangThai,
+      hdon.TienThue,
+      hdon.ChiSoDienCu,
+      hdon.ChiSoDienMoi,
+      hdon.TienDien,
+      hdon.ChiSoNuocCu,
+      hdon.ChiSoNuocMoi,
+      hdon.TienNuoc,
+      hdon.TongTien,
+      n.MaNhaTro,
+      n.TenNhaTro,
+      hd.NgayBatDau AS NgayBatDauHD,
+      hd.NgayKetThuc AS NgayKetThucHD,
+      nd.MaNguoiThue AS MaNguoiDaiDien,
+      nd.HoTen AS NguoiDaiDien,
+      nd.SoDienThoai,
+      ct.HoTen AS ChuTro_HoTen,
+      ct.SoDienThoai AS ChuTro_SoDienThoai,
+      (
+        SELECT COUNT(*) FROM HOPDONG_NGUOITHUE hdnt2
+        WHERE hdnt2.MaHopDong = hdon.MaHopDong AND hdnt2.TrangThai = 'DANG_O'
+      ) AS SoNguoiTrongHopDong
+    FROM HOADON hdon
+    JOIN HOPDONG hd ON hdon.MaHopDong = hd.MaHopDong
+    JOIN NHATRO n ON hd.MaNhaTro = n.MaNhaTro
+    JOIN CHUTRO ct ON n.MaChuTro = ct.MaChuTro
+    JOIN NGUOITHUE nd ON hd.MaNguoiDaiDien = nd.MaNguoiThue
+    WHERE hdon.MaHoaDon = ? AND n.MaChuTro = ?
+  `;
+
+  const [rows] = await pool.query<InvoicePrintRow[]>(sql, [maHoaDon, maChuTro]);
+  const row = rows[0];
+  if (!row) {
+    throw new ApiError(404, "NOT_FOUND", "Không tìm thấy hóa đơn");
+  }
+
+  return {
+    maHoaDon: row.MaHoaDon,
+    maHopDong: row.MaHopDong,
+    thang: row.Thang,
+    nam: row.Nam,
+    ngayLap: row.NgayLap,
+    hanThanhToan: row.HanThanhToan,
+    ghiChu: row.GhiChu ?? null,
+    trangThai: row.TrangThai,
+    tienThue: Number(row.TienThue),
+    chiSoDienCu: Number(row.ChiSoDienCu),
+    chiSoDienMoi: Number(row.ChiSoDienMoi),
+    tienDien: Number(row.TienDien),
+    chiSoNuocCu: Number(row.ChiSoNuocCu),
+    chiSoNuocMoi: Number(row.ChiSoNuocMoi),
+    tienNuoc: Number(row.TienNuoc),
+    tongTien: Number(row.TongTien),
+    phong: {
+      maNhaTro: row.MaNhaTro,
+      tenNhaTro: row.TenNhaTro,
+    },
+    nguoiDaiDien: {
+      hoTen: row.NguoiDaiDien,
+      soDienThoai: row.SoDienThoai,
+    },
+    chuTro: {
+      hoTen: row.ChuTro_HoTen,
+      soDienThoai: row.ChuTro_SoDienThoai,
+    },
+  };
+}
+
 // ---------- Create ----------
 
 export type CreateInvoiceInput = {
@@ -307,6 +429,36 @@ export async function createInvoice(maChuTro: string, input: CreateInvoiceInput)
   );
   if (dupRows.length > 0)
     throw new ApiError(409, "DUPLICATE_INVOICE", `Hóa đơn tháng ${input.thang}/${input.nam} cho hợp đồng này đã tồn tại`);
+
+  const [previousMeterRows] = await pool.query<PreviousMeterRow[]>(
+    `
+      SELECT ChiSoDienMoi, ChiSoNuocMoi
+      FROM HOADON
+      WHERE MaHopDong = ?
+      ORDER BY Nam DESC, Thang DESC, NgayLap DESC, MaHoaDon DESC
+      LIMIT 1
+    `,
+    [input.maHopDong]
+  );
+  const previousMeter = previousMeterRows[0] ?? null;
+  if (previousMeter) {
+    const expectedOldElectric = Number(previousMeter.ChiSoDienMoi);
+    const expectedOldWater = Number(previousMeter.ChiSoNuocMoi);
+    if (input.chiSoDienCu !== expectedOldElectric) {
+      throw new ApiError(
+        400,
+        "INVALID_PREVIOUS_ELECTRIC_READING",
+        `Chỉ số điện cũ phải bằng chỉ số điện mới của hóa đơn trước (${expectedOldElectric})`
+      );
+    }
+    if (input.chiSoNuocCu !== expectedOldWater) {
+      throw new ApiError(
+        400,
+        "INVALID_PREVIOUS_WATER_READING",
+        `Chỉ số nước cũ phải bằng chỉ số nước mới của hóa đơn trước (${expectedOldWater})`
+      );
+    }
+  }
 
   const maHoaDon = generateInvoiceId();
   const tongTien = Number(input.tienThue) + Number(input.tienDien) + Number(input.tienNuoc);
@@ -425,7 +577,23 @@ export async function getActiveContractOptions(maChuTro: string) {
        (
          SELECT COUNT(*) FROM HOPDONG_NGUOITHUE hdnt2
          WHERE hdnt2.MaHopDong = hd.MaHopDong AND hdnt2.TrangThai = 'DANG_O'
-       ) AS SoNguoiThue
+       ) AS SoNguoiThue,
+       (
+         SELECT COUNT(*) FROM HOADON hdon2
+         WHERE hdon2.MaHopDong = hd.MaHopDong
+       ) AS SoHoaDon,
+       (
+         SELECT hdon3.ChiSoDienMoi FROM HOADON hdon3
+         WHERE hdon3.MaHopDong = hd.MaHopDong
+         ORDER BY hdon3.Nam DESC, hdon3.Thang DESC, hdon3.NgayLap DESC, hdon3.MaHoaDon DESC
+         LIMIT 1
+       ) AS ChiSoDienMoiGanNhat,
+       (
+         SELECT hdon4.ChiSoNuocMoi FROM HOADON hdon4
+         WHERE hdon4.MaHopDong = hd.MaHopDong
+         ORDER BY hdon4.Nam DESC, hdon4.Thang DESC, hdon4.NgayLap DESC, hdon4.MaHoaDon DESC
+         LIMIT 1
+       ) AS ChiSoNuocMoiGanNhat
      FROM HOPDONG hd
      JOIN NHATRO n ON hd.MaNhaTro = n.MaNhaTro
      JOIN NGUOITHUE nd ON hd.MaNguoiDaiDien = nd.MaNguoiThue
@@ -446,5 +614,8 @@ export async function getActiveContractOptions(maChuTro: string) {
     ngayKetThuc: toDateOnly(r.NgayKetThuc),
     trangThai: r.TrangThai,
     soNguoiThue: Number(r.SoNguoiThue),
+    soHoaDon: Number(r.SoHoaDon ?? 0),
+    chiSoDienMoiGanNhat: r.ChiSoDienMoiGanNhat === null ? null : Number(r.ChiSoDienMoiGanNhat),
+    chiSoNuocMoiGanNhat: r.ChiSoNuocMoiGanNhat === null ? null : Number(r.ChiSoNuocMoiGanNhat),
   }));
 }

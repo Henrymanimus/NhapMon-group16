@@ -18,6 +18,9 @@ interface ContractOption {
   ngayKetThuc: string | null;
   trangThai: string;
   soNguoiThue: number;
+  soHoaDon: number;
+  chiSoDienMoiGanNhat: number | null;
+  chiSoNuocMoiGanNhat: number | null;
 }
 
 function parseISODate(value: string): Date | null {
@@ -60,6 +63,10 @@ function fmt(n: number) {
 
 function inputCls(err?: string) {
   return `w-full px-3.5 py-2.5 border ${err ? "border-red-400 bg-red-50" : "border-gray-300"} rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors`;
+}
+
+function meterInputCls(err?: string, locked = false) {
+  return `${inputCls(err)} ${locked ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""}`;
 }
 
 // Edit mode pre-filled data (empty defaults)
@@ -134,12 +141,35 @@ export function InvoiceForm() {
   }, [isEdit, id]);
 
   const selectedContract = contracts.find((c) => c.maHopDong === contractId) ?? null;
+  const shouldLockOldMeters =
+    !isEdit &&
+    !!selectedContract &&
+    selectedContract.soHoaDon > 0 &&
+    selectedContract.chiSoDienMoiGanNhat !== null &&
+    selectedContract.chiSoNuocMoiGanNhat !== null;
 
   // Auto-fill rent when contract is selected
   const handleSelectContract = (cid: string) => {
     setContractId(cid);
     const c = contracts.find((x) => x.maHopDong === cid);
-    if (c) setForm((prev) => ({ ...prev, rent: String(c.tienThue) }));
+    if (c) {
+      setForm((prev) => ({
+        ...prev,
+        rent: String(c.tienThue),
+        elecOld:
+          !isEdit && c.soHoaDon > 0 && c.chiSoDienMoiGanNhat !== null
+            ? String(c.chiSoDienMoiGanNhat)
+            : isEdit
+              ? prev.elecOld
+              : "",
+        waterOld:
+          !isEdit && c.soHoaDon > 0 && c.chiSoNuocMoiGanNhat !== null
+            ? String(c.chiSoNuocMoiGanNhat)
+            : isEdit
+              ? prev.waterOld
+              : "",
+      }));
+    }
     if (errors.contractId) setErrors((prev) => ({ ...prev, contractId: "" }));
   };
 
@@ -344,6 +374,19 @@ export function InvoiceForm() {
                         {selectedContract.trangThai}
                       </span>
                     </div>
+                    <div>
+                      <p className="text-xs text-gray-500">Số hóa đơn</p>
+                      <p className="font-semibold">{selectedContract.soHoaDon}</p>
+                    </div>
+                    {selectedContract.soHoaDon > 0 && (
+                      <div className="sm:col-span-2">
+                        <p className="text-xs text-gray-500">Chỉ số cũ kỳ này</p>
+                        <p className="text-xs text-gray-700">
+                          Điện: <span className="font-semibold">{selectedContract.chiSoDienMoiGanNhat ?? 0} kWh</span>
+                          {" "}· Nước: <span className="font-semibold">{selectedContract.chiSoNuocMoiGanNhat ?? 0} m³</span>
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -439,7 +482,10 @@ export function InvoiceForm() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Chỉ số cũ (kWh)</label>
                   <input type="number" name="elecOld" value={form.elecOld} onChange={handleChange}
-                    className={inputCls()} placeholder="VD: 120" min="0" />
+                    className={meterInputCls(undefined, shouldLockOldMeters)} placeholder="VD: 120" min="0" readOnly={shouldLockOldMeters} />
+                  {shouldLockOldMeters && (
+                    <p className="mt-1 text-xs text-gray-500">Lấy từ chỉ số mới của hóa đơn trước</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Chỉ số mới (kWh)</label>
@@ -476,7 +522,10 @@ export function InvoiceForm() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Chỉ số cũ (m³)</label>
                   <input type="number" name="waterOld" value={form.waterOld} onChange={handleChange}
-                    className={inputCls()} placeholder="VD: 45" min="0" />
+                    className={meterInputCls(undefined, shouldLockOldMeters)} placeholder="VD: 45" min="0" readOnly={shouldLockOldMeters} />
+                  {shouldLockOldMeters && (
+                    <p className="mt-1 text-xs text-gray-500">Lấy từ chỉ số mới của hóa đơn trước</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Chỉ số mới (m³)</label>

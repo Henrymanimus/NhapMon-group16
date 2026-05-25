@@ -16,6 +16,29 @@ export const changePasswordBodySchema = z.object({
   matKhauMoi: z.string().min(6, "Mật khẩu mới phải có ít nhất 6 ký tự"),
 });
 
+export const forgotPasswordBodySchema = z.object({
+  tenDangNhap: z.string().min(1, "Vui lòng nhập tên đăng nhập hoặc email"),
+});
+
+export const verifyOtpBodySchema = z.object({
+  tenDangNhap: z.string().min(1, "Vui lòng nhập tên đăng nhập hoặc email"),
+  otp: z.string().regex(/^[0-9]{5}$/, "OTP phải gồm 5 chữ số"),
+});
+
+export const resetPasswordBodySchema = z.object({
+  tenDangNhap: z.string().min(1, "Vui lòng nhập tên đăng nhập hoặc email"),
+  otp: z.string().regex(/^[0-9]{5}$/, "OTP phải gồm 5 chữ số"),
+  matKhauMoi: z.string().min(6, "Mật khẩu mới phải có ít nhất 6 ký tự"),
+});
+
+export const registerBodySchema = z.object({
+  hoTen: z.string().trim().min(1, "Vui lòng nhập họ tên"),
+  email: z.string().trim().email("Email không hợp lệ"),
+  soDienThoai: z.string().trim().regex(/^[0-9]{10}$/, "Số điện thoại phải có 10 chữ số"),
+  tenDangNhap: z.string().trim().min(1, "Vui lòng nhập tên đăng nhập").max(50, "Tên đăng nhập tối đa 50 ký tự"),
+  matKhau: z.string().min(6, "Mật khẩu phải có ít nhất 6 ký tự"),
+});
+
 export const loginBodySchema = z.object({
   tenDangNhap: z.string().optional(),
   matKhau: z.string().optional(),

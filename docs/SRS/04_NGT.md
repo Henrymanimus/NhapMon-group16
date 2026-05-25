@@ -2,9 +2,9 @@
 
 **1\. Thông tin chung**
 
-**Mã nhóm chức năng: NGT  
-Tên chức năng: Quản lý người thuê  
-Tác nhân: Chủ trọ  
+**Mã nhóm chức năng: NGT
+Tên chức năng: Quản lý người thuê
+Tác nhân: Chủ trọ
 Mức độ ưu tiên: Bắt buộc**
 
 **Chức năng này cho phép chủ trọ quản lý thông tin cá nhân người thuê, xem tình trạng đang ở, vai trò trong hợp đồng, phòng hiện tại, lịch sử thuê và hóa đơn liên quan.**
@@ -33,7 +33,7 @@ Mức độ ưu tiên: Bắt buộc**
 | **NGT-04** | **Xem chi tiết người thuê**  | **Xem thông tin cá nhân, phòng đang ở, lịch sử thuê, hóa đơn** |
 | **NGT-05** | **Thêm người thuê**          | **Thêm mới thông tin cá nhân người thuê**                      |
 | **NGT-06** | **Chỉnh sửa người thuê**     | **Cập nhật thông tin cá nhân người thuê**                      |
-| **NGT-07** | **Xóa người thuê**           | **Xóa người thuê nếu chưa có ràng buộc hợp đồng**              |
+| **NGT-07** | **Xóa người thuê**           | **Xóa người thuê nếu trạng thái hiện tại là Đã rời**           |
 | **NGT-08** | **Xem lịch sử thuê**         | **Xem các hợp đồng người thuê đã tham gia**                    |
 | **NGT-09** | **Xem hóa đơn liên quan**    | **Xem hóa đơn phát sinh từ các hợp đồng liên quan**            |
 
@@ -170,24 +170,24 @@ Mức độ ưu tiên: Bắt buộc**
 
 **7.5. Query gợi ý**
 
-**SELECT  
-nt.MaNguoiThue,  
-nt.HoTen,  
-nt.SoDienThoai,  
-nt.CCCD,  
-n.MaNhaTro,  
-n.TenNhaTro,  
-hdnt.VaiTro,  
-hdnt.NgayThamGia,  
-hdnt.TrangThai  
-FROM NguoiThue nt  
-LEFT JOIN HopDong_NguoiThue hdnt  
-ON nt.MaNguoiThue = hdnt.MaNguoiThue  
-AND hdnt.TrangThai = N'Đang ở'  
-LEFT JOIN HopDong hd  
-ON hdnt.MaHopDong = hd.MaHopDong  
-AND hd.TrangThai = N'Đang hiệu lực'  
-LEFT JOIN NhaTro n  
+**SELECT
+nt.MaNguoiThue,
+nt.HoTen,
+nt.SoDienThoai,
+nt.CCCD,
+n.MaNhaTro,
+n.TenNhaTro,
+hdnt.VaiTro,
+hdnt.NgayThamGia,
+hdnt.TrangThai
+FROM NguoiThue nt
+LEFT JOIN HopDong_NguoiThue hdnt
+ON nt.MaNguoiThue = hdnt.MaNguoiThue
+AND hdnt.TrangThai = N'Đang ở'
+LEFT JOIN HopDong hd
+ON hdnt.MaHopDong = hd.MaHopDong
+AND hd.TrangThai = N'Đang hiệu lực'
+LEFT JOIN NhaTro n
 ON hd.MaNhaTro = n.MaNhaTro;**
 
 **8\. NGT-02 - Tìm kiếm người thuê**
@@ -212,10 +212,10 @@ ON hd.MaNhaTro = n.MaNhaTro;**
 
 **8.4. Query gợi ý**
 
-**WHERE nt.HoTen LIKE '%' + @keyword + '%'  
-OR nt.SoDienThoai LIKE '%' + @keyword + '%'  
-OR nt.CCCD LIKE '%' + @keyword + '%'  
-OR n.MaNhaTro LIKE '%' + @keyword + '%'  
+**WHERE nt.HoTen LIKE '%' + @keyword + '%'
+OR nt.SoDienThoai LIKE '%' + @keyword + '%'
+OR nt.CCCD LIKE '%' + @keyword + '%'
+OR n.MaNhaTro LIKE '%' + @keyword + '%'
 OR n.TenNhaTro LIKE '%' + @keyword + '%'**
 
 **9\. NGT-03 - Lọc người thuê**
@@ -323,96 +323,96 @@ OR n.TenNhaTro LIKE '%' + @keyword + '%'**
 
 **10.4. Query lấy thông tin phòng đang ở**
 
-**SELECT  
-n.MaNhaTro,  
-n.TenNhaTro,  
-hd.MaHopDong,  
-hd.NgayBatDau,  
-hd.NgayKetThuc,  
-hd.TienThue,  
-hdnt.VaiTro,  
-hdnt.NgayThamGia,  
-hdnt.TrangThai  
-FROM HopDong_NguoiThue hdnt  
-JOIN HopDong hd  
-ON hdnt.MaHopDong = hd.MaHopDong  
-JOIN NhaTro n  
-ON hd.MaNhaTro = n.MaNhaTro  
-WHERE hdnt.MaNguoiThue = @MaNguoiThue  
-AND hdnt.TrangThai = N'Đang ở'  
+**SELECT
+n.MaNhaTro,
+n.TenNhaTro,
+hd.MaHopDong,
+hd.NgayBatDau,
+hd.NgayKetThuc,
+hd.TienThue,
+hdnt.VaiTro,
+hdnt.NgayThamGia,
+hdnt.TrangThai
+FROM HopDong_NguoiThue hdnt
+JOIN HopDong hd
+ON hdnt.MaHopDong = hd.MaHopDong
+JOIN NhaTro n
+ON hd.MaNhaTro = n.MaNhaTro
+WHERE hdnt.MaNguoiThue = @MaNguoiThue
+AND hdnt.TrangThai = N'Đang ở'
 AND hd.TrangThai = N'Đang hiệu lực';**
 
 **10.5. Query lấy người ở cùng phòng**
 
-**SELECT  
-nt.MaNguoiThue,  
-nt.HoTen,  
-nt.SoDienThoai,  
-hdnt.VaiTro  
-FROM HopDong_NguoiThue hdnt  
-JOIN NguoiThue nt  
-ON hdnt.MaNguoiThue = nt.MaNguoiThue  
-WHERE hdnt.MaHopDong = @MaHopDong  
-AND hdnt.TrangThai = N'Đang ở'  
+**SELECT
+nt.MaNguoiThue,
+nt.HoTen,
+nt.SoDienThoai,
+hdnt.VaiTro
+FROM HopDong_NguoiThue hdnt
+JOIN NguoiThue nt
+ON hdnt.MaNguoiThue = nt.MaNguoiThue
+WHERE hdnt.MaHopDong = @MaHopDong
+AND hdnt.TrangThai = N'Đang ở'
 AND nt.MaNguoiThue <> @MaNguoiThue;**
 
 **10.6. Query lấy lịch sử thuê**
 
-**SELECT  
-hd.MaHopDong,  
-n.MaNhaTro,  
-n.TenNhaTro,  
-hdnt.VaiTro,  
-hd.NgayBatDau,  
-hd.NgayKetThuc,  
-hd.TrangThai,  
-COUNT(hdnt2.MaNguoiThue) AS SoNguoi  
-FROM HopDong_NguoiThue hdnt  
-JOIN HopDong hd  
-ON hdnt.MaHopDong = hd.MaHopDong  
-JOIN NhaTro n  
-ON hd.MaNhaTro = n.MaNhaTro  
-LEFT JOIN HopDong_NguoiThue hdnt2  
-ON hd.MaHopDong = hdnt2.MaHopDong  
-WHERE hdnt.MaNguoiThue = @MaNguoiThue  
-GROUP BY  
-hd.MaHopDong,  
-n.MaNhaTro,  
-n.TenNhaTro,  
-hdnt.VaiTro,  
-hd.NgayBatDau,  
-hd.NgayKetThuc,  
+**SELECT
+hd.MaHopDong,
+n.MaNhaTro,
+n.TenNhaTro,
+hdnt.VaiTro,
+hd.NgayBatDau,
+hd.NgayKetThuc,
+hd.TrangThai,
+COUNT(hdnt2.MaNguoiThue) AS SoNguoi
+FROM HopDong_NguoiThue hdnt
+JOIN HopDong hd
+ON hdnt.MaHopDong = hd.MaHopDong
+JOIN NhaTro n
+ON hd.MaNhaTro = n.MaNhaTro
+LEFT JOIN HopDong_NguoiThue hdnt2
+ON hd.MaHopDong = hdnt2.MaHopDong
+WHERE hdnt.MaNguoiThue = @MaNguoiThue
+GROUP BY
+hd.MaHopDong,
+n.MaNhaTro,
+n.TenNhaTro,
+hdnt.VaiTro,
+hd.NgayBatDau,
+hd.NgayKetThuc,
 hd.TrangThai;**
 
 **10.7. Query lấy hóa đơn liên quan**
 
-**SELECT  
-hd.MaHoaDon,  
-n.MaNhaTro,  
-hd.Thang,  
-hd.Nam,  
-hd.TongTien,  
-hd.TrangThai  
-FROM HoaDon hd  
-JOIN HopDong h  
-ON hd.MaHopDong = h.MaHopDong  
-JOIN NhaTro n  
-ON h.MaNhaTro = n.MaNhaTro  
-JOIN HopDong_NguoiThue hdnt  
-ON h.MaHopDong = hdnt.MaHopDong  
+**SELECT
+hd.MaHoaDon,
+n.MaNhaTro,
+hd.Thang,
+hd.Nam,
+hd.TongTien,
+hd.TrangThai
+FROM HoaDon hd
+JOIN HopDong h
+ON hd.MaHopDong = h.MaHopDong
+JOIN NhaTro n
+ON h.MaNhaTro = n.MaNhaTro
+JOIN HopDong_NguoiThue hdnt
+ON h.MaHopDong = hdnt.MaHopDong
 WHERE hdnt.MaNguoiThue = @MaNguoiThue;**
 
 **10.8. Query tính công nợ**
 
-**SELECT  
-SUM(hd.TongTien) AS TongNo,  
-COUNT(hd.MaHoaDon) AS SoHoaDonChuaThanhToan  
-FROM HoaDon hd  
-JOIN HopDong h  
-ON hd.MaHopDong = h.MaHopDong  
-JOIN HopDong_NguoiThue hdnt  
-ON h.MaHopDong = hdnt.MaHopDong  
-WHERE hdnt.MaNguoiThue = @MaNguoiThue  
+**SELECT
+SUM(hd.TongTien) AS TongNo,
+COUNT(hd.MaHoaDon) AS SoHoaDonChuaThanhToan
+FROM HoaDon hd
+JOIN HopDong h
+ON hd.MaHopDong = h.MaHopDong
+JOIN HopDong_NguoiThue hdnt
+ON h.MaHopDong = hdnt.MaHopDong
+WHERE hdnt.MaNguoiThue = @MaNguoiThue
 AND hd.TrangThai = N'Chưa thanh toán';**
 
 **11\. NGT-05 - Thêm người thuê**
@@ -471,23 +471,23 @@ AND hd.TrangThai = N'Chưa thanh toán';**
 
 **11.6. Query gợi ý**
 
-**INSERT INTO NguoiThue (  
-MaNguoiThue,  
-HoTen,  
-SoDienThoai,  
-CCCD,  
-Email,  
-NgaySinh,  
-DiaChi  
-)  
-VALUES (  
-@MaNguoiThue,  
-@HoTen,  
-@SoDienThoai,  
-@CCCD,  
-@Email,  
-@NgaySinh,  
-@DiaChi  
+**INSERT INTO NguoiThue (
+MaNguoiThue,
+HoTen,
+SoDienThoai,
+CCCD,
+Email,
+NgaySinh,
+DiaChi
+)
+VALUES (
+@MaNguoiThue,
+@HoTen,
+@SoDienThoai,
+@CCCD,
+@Email,
+@NgaySinh,
+@DiaChi
 );**
 
 **12\. NGT-06 - Chỉnh sửa người thuê**
@@ -527,8 +527,8 @@ VALUES (
 
 **12.5. Kiểm tra người thuê đã có hợp đồng hay chưa**
 
-**SELECT COUNT(\*)  
-FROM HopDong_NguoiThue  
+**SELECT COUNT(\*)
+FROM HopDong_NguoiThue
 WHERE MaNguoiThue = @MaNguoiThue;**
 
 **Nếu kết quả > 0:**
@@ -560,25 +560,25 @@ WHERE MaNguoiThue = @MaNguoiThue;**
 
 **Trường hợp chưa có hợp đồng, cho phép sửa CCCD**
 
-**UPDATE NguoiThue  
-SET  
-HoTen = @HoTen,  
-SoDienThoai = @SoDienThoai,  
-Email = @Email,  
-CCCD = @CCCD,  
-NgaySinh = @NgaySinh,  
-DiaChi = @DiaChi  
+**UPDATE NguoiThue
+SET
+HoTen = @HoTen,
+SoDienThoai = @SoDienThoai,
+Email = @Email,
+CCCD = @CCCD,
+NgaySinh = @NgaySinh,
+DiaChi = @DiaChi
 WHERE MaNguoiThue = @MaNguoiThue;**
 
 **Trường hợp đã có hợp đồng, không sửa CCCD**
 
-**UPDATE NguoiThue  
-SET  
-HoTen = @HoTen,  
-SoDienThoai = @SoDienThoai,  
-Email = @Email,  
-NgaySinh = @NgaySinh,  
-DiaChi = @DiaChi  
+**UPDATE NguoiThue
+SET
+HoTen = @HoTen,
+SoDienThoai = @SoDienThoai,
+Email = @Email,
+NgaySinh = @NgaySinh,
+DiaChi = @DiaChi
 WHERE MaNguoiThue = @MaNguoiThue;**
 
 **13\. NGT-07 - Xóa người thuê**
@@ -591,78 +591,89 @@ WHERE MaNguoiThue = @MaNguoiThue;**
 
 **Không cho xóa người thuê nếu:**
 
-- **người thuê đang ở trong một hợp đồng đang hiệu lực**
-- **người thuê đã từng tham gia hợp đồng**
-- **người thuê có hóa đơn liên quan thông qua hợp đồng**
+- **người thuê đang có trạng thái Đang ở**
+- **người thuê còn bản ghi HopDong_NguoiThue.TrangThai = 'Đang ở'**
 
-**Vì hệ thống cần giữ lịch sử thuê và công nợ.**
+**Cho phép xóa người thuê nếu:**
+
+- **người thuê có trạng thái Đã rời**
+- **người thuê không còn bản ghi HopDong_NguoiThue.TrangThai = 'Đang ở'**
+
+**Khi xóa người thuê Đã rời, hệ thống được phép dọn các dòng liên kết lịch sử có TrangThai = 'Đã rời' trước khi xóa người thuê khỏi DB để đảm bảo ràng buộc khóa ngoại.**
 
 **13.3. UI hiện tại**
 
 **Khi nhấn icon xóa, hệ thống hiển thị modal:**
 
-**Xóa người thuê  
-Bạn có chắc muốn xóa người thuê này?  
-Người thuê đang ở tại phòng A101. Cần kết thúc hợp đồng trước khi xóa.**
+**Xóa người thuê
+Bạn có chắc muốn xóa người thuê này?**
 
-**UI này hợp lý và nên giữ.**
+**Nếu người thuê đang ở, hệ thống không mở luồng xóa thành công và hiển thị cảnh báo:**
+
+**Người thuê đang ở trong hợp đồng hiệu lực, cần kết thúc hợp đồng trước khi xóa.**
 
 **13.4. Luồng xử lý**
 
 - **Chủ trọ nhấn icon xóa.**
-- **Hệ thống kiểm tra người thuê có trong HopDong_NguoiThue hay không.**
-- **Nếu có:**
+- **Hệ thống kiểm tra người thuê có bản ghi HopDong_NguoiThue.TrangThai = 'Đang ở' hay không.**
+- **Nếu có trạng thái Đang ở:**
   - **không cho xóa**
   - **hiển thị cảnh báo.**
-- **Nếu không có:**
+- **Nếu trạng thái Đã rời hoặc không có bản ghi Đang ở:**
   - **hiển thị modal xác nhận xóa.**
 - **Chủ trọ nhấn xác nhận.**
-- **Hệ thống xóa hoặc xóa mềm người thuê.**
+- **Hệ thống dọn các dòng HopDong_NguoiThue có TrangThai = 'Đã rời' liên quan.**
+- **Hệ thống xóa người thuê khỏi bảng NguoiThue.**
 
 **13.5. Đề xuất cho đồ án sinh viên**
 
-**Có thể dùng rule đơn giản:**
+**Rule áp dụng trong đồ án:**
 
-**Nếu người thuê đã từng có hợp đồng thì không cho xóa.  
-Nếu chưa từng có hợp đồng thì cho phép xóa.**
+**Nếu người thuê đang ở thì không cho xóa.
+Nếu người thuê đã rời thì cho phép xóa khỏi DB.**
 
 **13.6. Query kiểm tra**
 
-**SELECT COUNT(\*)  
-FROM HopDong_NguoiThue  
-WHERE MaNguoiThue = @MaNguoiThue;**
+**SELECT COUNT(\*)
+FROM HopDong_NguoiThue
+WHERE MaNguoiThue = @MaNguoiThue
+AND TrangThai = N'Đang ở';**
 
 **13.7. Query xóa**
 
-**DELETE FROM NguoiThue  
+**DELETE FROM HopDong_NguoiThue
+WHERE MaNguoiThue = @MaNguoiThue
+AND TrangThai = N'Đã rời';
+
+DELETE FROM NguoiThue
 WHERE MaNguoiThue = @MaNguoiThue;**
 
-**Nếu muốn xóa mềm thì thêm IsDeleted, nhưng với đồ án đơn giản có thể chỉ cần chặn xóa khi đã có hợp đồng.**
+**Với đồ án hiện tại dùng xóa cứng khỏi DB: chỉ chặn người thuê Đang ở, cho phép xóa người thuê Đã rời.**
 
 **14\. Card thống kê người thuê**
 
 **14.1. Tổng người thuê**
 
-**SELECT COUNT(\*)  
+**SELECT COUNT(\*)
 FROM NguoiThue;**
 
 **14.2. Đang ở**
 
-**SELECT COUNT(DISTINCT MaNguoiThue)  
-FROM HopDong_NguoiThue  
+**SELECT COUNT(DISTINCT MaNguoiThue)
+FROM HopDong_NguoiThue
 WHERE TrangThai = N'Đang ở';**
 
 **14.3. Đã rời**
 
-**SELECT COUNT(DISTINCT MaNguoiThue)  
-FROM HopDong_NguoiThue  
+**SELECT COUNT(DISTINCT MaNguoiThue)
+FROM HopDong_NguoiThue
 WHERE TrangThai = N'Đã rời';**
 
 **14.4. Người đại diện**
 
-**SELECT COUNT(DISTINCT MaNguoiThue)  
-FROM HopDong_NguoiThue  
-WHERE VaiTro = N'Đại diện'  
+**SELECT COUNT(DISTINCT MaNguoiThue)
+FROM HopDong_NguoiThue
+WHERE VaiTro = N'Đại diện'
 AND TrangThai = N'Đang ở';**
 
 **15\. API gợi ý**
@@ -687,7 +698,7 @@ AND TrangThai = N'Đang ở';**
 | **Xóa thành công**      | **Xóa người thuê thành công**                                              |
 | **CCCD trùng**          | **CCCD/CMND đã tồn tại**                                                   |
 | **Không cho sửa CCCD**  | **CCCD/CMND đã được sử dụng trong hợp đồng nên không thể chỉnh sửa**       |
-| **Không cho xóa**       | **Người thuê đã có hợp đồng nên không thể xóa**                            |
+| **Không cho xóa**       | **Không thể xóa người thuê đang ở**                                        |
 | **Người thuê đang ở**   | **Người thuê đang ở trong hợp đồng hiệu lực, cần kết thúc hợp đồng trước** |
 | **Không tìm thấy**      | **Không tìm thấy người thuê**                                              |
 | **Lỗi hệ thống**        | **Có lỗi xảy ra, vui lòng thử lại**                                        |
@@ -705,4 +716,4 @@ AND TrangThai = N'Đang ở';**
 - **Người thuê có thể là đại diện hoặc người ở cùng**
 - **Không gán phòng trực tiếp trong form người thuê**
 - **Không sửa CCCD nếu người thuê đã có hợp đồng**
-- **Không xóa người thuê nếu đã từng tham gia hợp đồng**
+- **Không xóa người thuê đang ở, cho phép xóa người thuê đã rời**

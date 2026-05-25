@@ -8,7 +8,6 @@ import {
   BarChart3,
   User,
   Search,
-  Bell,
   Menu,
   LogOut
 } from "lucide-react";
@@ -16,7 +15,7 @@ import { useState } from "react";
 import { clearAuth, getAuthUser } from "../../../lib/auth";
 
 const menuItems = [
-  { path: "/", icon: LayoutDashboard, label: "Dashboard" },
+  { path: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { path: "/rooms", icon: Home, label: "Nhà trọ" },
   { path: "/tenants", icon: Users, label: "Người thuê" },
   { path: "/contracts", icon: FileText, label: "Hợp đồng" },
@@ -107,11 +106,6 @@ export function MainLayout() {
 
           {/* User Menu */}
           <div className="flex items-center gap-4">
-            <button className="relative p-2 text-gray-500 hover:bg-gray-100 rounded-lg">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-            </button>
-
             <div className="flex items-center gap-3 pl-4 border-l border-gray-200">
               <div className="text-right">
                 <div className="font-medium text-sm">{authUser?.hoTen ?? "Chủ trọ"}</div>

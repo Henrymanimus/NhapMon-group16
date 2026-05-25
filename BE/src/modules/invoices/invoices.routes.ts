@@ -4,6 +4,7 @@ import { invoiceIdParamSchema, createInvoiceBodySchema, updateInvoiceBodySchema 
 import {
   listInvoicesHandler,
   getInvoiceHandler,
+  previewInvoicePdfHandler,
   createInvoiceHandler,
   updateInvoiceHandler,
   confirmPaymentHandler,
@@ -14,6 +15,7 @@ export const invoiceRoutes = Router();
 
 invoiceRoutes.get("/", listInvoicesHandler);
 invoiceRoutes.get("/contract-options", getContractOptionsHandler);
+invoiceRoutes.get("/:maHoaDon/preview.pdf", validateParams(invoiceIdParamSchema), previewInvoicePdfHandler);
 invoiceRoutes.get("/:maHoaDon", validateParams(invoiceIdParamSchema), getInvoiceHandler);
 invoiceRoutes.post("/", validateBody(createInvoiceBodySchema), createInvoiceHandler);
 invoiceRoutes.put(

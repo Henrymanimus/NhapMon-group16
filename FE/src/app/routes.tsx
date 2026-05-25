@@ -21,17 +21,20 @@ import { Account } from "./components/pages/Account";
 
 export const router = createBrowserRouter([
   {
+    path: "/",
+    Component: Login,
+  },
+  {
     path: "/login",
     Component: Login,
   },
   {
-    path: "/",
     Component: RequireAuth,
     children: [
       {
         Component: MainLayout,
         children: [
-      { index: true, Component: Dashboard },
+      { path: "dashboard", Component: Dashboard },
       { path: "rooms", Component: RoomsList },
       { path: "rooms/new", Component: RoomForm },
       { path: "rooms/:id", Component: RoomDetail },

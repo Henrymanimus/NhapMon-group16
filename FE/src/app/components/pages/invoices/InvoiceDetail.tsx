@@ -2,10 +2,10 @@ import { Link, useParams, useNavigate } from "react-router";
 import {
   ArrowLeft, Edit, Receipt, Home, Calendar, DollarSign,
   Zap, Droplets, CheckCircle, X, Info, Crown, Users,
-  Phone, FileText, AlertTriangle
+  Phone, FileText, AlertTriangle, Loader2
 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { apiFetch } from "../../../../lib/api";
+import { API_BASE_URL, apiFetch, getAuthHeaders } from "../../../../lib/api";
 
 interface InvoiceDetail {
   maHoaDon: string;
@@ -118,6 +118,10 @@ export function InvoiceDetail() {
   const [notFound, setNotFound] = useState(false);
   const [showPayModal, setShowPayModal] = useState(false);
   const [paying, setPaying] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -127,6 +131,14 @@ export function InvoiceDetail() {
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
   }, [id]);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   if (loading) return <div className="text-center py-20 text-gray-500">Đang tải...</div>;
   if (notFound || !invoice)
@@ -161,10 +173,122 @@ export function InvoiceDetail() {
     }
   };
 
+  const closePreview = () => {
+    setPreviewOpen(false);
+    setPreviewError(null);
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(null);
+    }
+  };
+
+  const openInvoicePreview = async () => {
+    if (!invoice || previewLoading) {
+      return;
+    }
+
+    setPreviewOpen(true);
+    setPreviewLoading(true);
+    setPreviewError(null);
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(null);
+    }
+
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/api/invoices/${encodeURIComponent(invoice.maHoaDon)}/preview.pdf`,
+        { headers: getAuthHeaders() }
+      );
+
+      if (!res.ok) {
+        let message = `HTTP ${res.status}`;
+        try {
+          const body = await res.json();
+          message = body?.error?.message ?? message;
+        } catch {
+          // ignore parse error
+        }
+        throw new Error(message);
+      }
+
+      const blob = await res.blob();
+      setPreviewUrl(URL.createObjectURL(blob));
+    } catch (err) {
+      setPreviewError(err instanceof Error ? err.message : "Không thể tải preview hóa đơn");
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {showPayModal && (
         <PaymentModal invoice={invoice} onConfirm={handleConfirmPayment} onCancel={() => setShowPayModal(false)} />
+      )}
+
+      {previewOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3">
+          <div className="absolute inset-0 bg-black/50" onClick={closePreview} />
+          <div
+            className="relative bg-white rounded-xl shadow-xl flex flex-col overflow-hidden"
+            style={{
+              width: "min(94vw, 1040px)",
+              height: "calc(100vh - 160px)",
+              minHeight: "560px",
+            }}
+          >
+            <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-gray-200">
+              <div>
+                <h3 className="text-base font-bold text-gray-900">Preview hóa đơn</h3>
+                <p className="text-xs text-gray-500">{invoice.maHoaDon}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                {previewUrl && (
+                  <a
+                    href={previewUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Mở PDF
+                  </a>
+                )}
+                <button
+                  type="button"
+                  onClick={closePreview}
+                  className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
+                  aria-label="Đóng preview"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 bg-gray-100">
+              {previewLoading && (
+                <div className="h-full flex items-center justify-center gap-2 text-gray-600">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Đang tải PDF...
+                </div>
+              )}
+              {!previewLoading && previewError && (
+                <div className="h-full flex items-center justify-center p-6">
+                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                    {previewError}
+                  </div>
+                </div>
+              )}
+              {!previewLoading && !previewError && previewUrl && (
+                <iframe
+                  title="Preview hóa đơn PDF"
+                  src={`${previewUrl}#toolbar=1&navpanes=0&zoom=page-width`}
+                  className="w-full h-full border-0"
+                />
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Header */}
@@ -183,18 +307,28 @@ export function InvoiceDetail() {
             <p className="text-gray-500 text-sm mt-0.5">Chi tiết hóa đơn tháng {invoice.thang}/{invoice.nam}</p>
           </div>
         </div>
-        {isUnpaid && (
-          <div className="flex gap-2">
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={openInvoicePreview}
+            disabled={previewLoading}
+            className="flex items-center gap-2 border border-blue-200 bg-blue-50 text-blue-700 px-3 py-2 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium disabled:opacity-60"
+          >
+            <FileText className="w-4 h-4" />Preview hóa đơn
+          </button>
+          {isUnpaid && (
             <button onClick={() => setShowPayModal(true)}
               className="flex items-center gap-2 bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium">
               <CheckCircle className="w-4 h-4" />Xác nhận thanh toán
             </button>
+          )}
+          {isUnpaid && (
               <Link to={`/invoices/${invoice.maHoaDon}/edit`}
               className="flex items-center gap-2 bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
               <Edit className="w-4 h-4" />Chỉnh sửa
             </Link>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

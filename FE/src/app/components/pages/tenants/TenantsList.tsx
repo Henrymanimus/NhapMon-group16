@@ -116,9 +116,6 @@ function DeleteModal({
           </div>
         </div>
         <p className="text-gray-700 mb-4">Bạn có chắc muốn xóa người thuê này?</p>
-        <p className="text-xs text-gray-500 mb-5">
-          Lưu ý: hệ thống sẽ từ chối xóa nếu người thuê đã từng tham gia hợp đồng.
-        </p>
         <div className="flex gap-3 justify-end">
           <button onClick={onCancel} className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors text-sm">
             Hủy
@@ -253,7 +250,9 @@ export function TenantsList() {
     } catch (err) {
       setDeleteError(
         err instanceof ApiResponseError
-          ? err.message
+          ? err.code === "TENANT_ACTIVE_IN_CONTRACT" || err.code === "TENANT_HAS_CONTRACTS"
+            ? "Không thể xóa người thuê đang tham gia hợp đồng"
+            : err.message
           : "Không thể xóa người thuê. Vui lòng thử lại."
       );
     } finally {

@@ -231,14 +231,9 @@ CREATE TRIGGER trg_hdnt_before_delete
 BEFORE DELETE ON HOPDONG_NGUOITHUE
 FOR EACH ROW
 BEGIN
-  DECLARE v_rep VARCHAR(20);
-  SELECT MaNguoiDaiDien INTO v_rep
-  FROM HOPDONG
-  WHERE MaHopDong = OLD.MaHopDong;
-
-  IF OLD.MaNguoiThue = v_rep THEN
+  IF OLD.TrangThai = 'DANG_O' THEN
     SIGNAL SQLSTATE '45000'
-      SET MESSAGE_TEXT = 'Representative row cannot be deleted from HOPDONG_NGUOITHUE.';
+      SET MESSAGE_TEXT = 'Cannot delete tenant participation while tenant is staying.';
   END IF;
 END $$
 

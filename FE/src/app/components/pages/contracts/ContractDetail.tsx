@@ -1,7 +1,23 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router";
-import { ArrowLeft, Calendar, Edit, Home, Loader2, Phone, Receipt, UserMinus, Users, XCircle } from "lucide-react";
-import { apiFetch, ApiResponseError } from "../../../../lib/api";
+import { Link, useNavigate, useParams } from "react-router";
+import {
+  ArrowLeft,
+  Calendar,
+  CheckCircle,
+  Edit,
+  FileText,
+  Home,
+  Loader2,
+  Phone,
+  Receipt,
+  Trash2,
+  UserMinus,
+  Users,
+  X,
+  XCircle,
+} from "lucide-react";
+import { API_BASE_URL, apiFetch, ApiResponseError, getAuthHeaders } from "../../../../lib/api";
+import { getAuthUser } from "../../../../lib/auth";
 
 type ContractStatusApi = "DANG_HIEU_LUC" | "DA_KET_THUC" | "DA_HUY";
 type TenantRoleApi = "DAI_DIEN" | "O_CUNG";
@@ -20,6 +36,8 @@ interface ContractItemDto {
   tienCoc: number;
   ghiChu: string | null;
   trangThai: ContractStatusApi;
+  daKy: boolean;
+  ngayKy: string | null;
   soNguoiThue: number;
   soHoaDon: number;
   soHoaDonChuaThanhToan: number;
@@ -89,12 +107,21 @@ function stayStatusLabel(status: TenantStayStatusApi): string {
 
 export function ContractDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const decodedId = id ? decodeURIComponent(id) : "";
   const [data, setData] = useState<ContractDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [terminateDate, setTerminateDate] = useState<string | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [signConfirmOpen, setSignConfirmOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+
+  const authUser = useMemo(() => getAuthUser(), []);
 
   const loadData = async () => {
     if (!decodedId) {
@@ -118,6 +145,14 @@ export function ContractDetail() {
   useEffect(() => {
     void loadData();
   }, [decodedId]);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   const representative = useMemo(
     () => data?.nguoiThue.find((item) => item.vaiTro === "DAI_DIEN") ?? null,
@@ -146,6 +181,92 @@ export function ContractDetail() {
       setError(err instanceof ApiResponseError ? err.message : "Không thể kết thúc hợp đồng");
     } finally {
       setBusy(false);
+    }
+  };
+
+  const deleteContract = async () => {
+    if (!data?.item || busy) {
+      return;
+    }
+
+    try {
+      setBusy(true);
+      await apiFetch(`/contracts/${encodeURIComponent(data.item.maHopDong)}`, {
+        method: "DELETE",
+      });
+      setDeleteConfirmOpen(false);
+      navigate("/contracts");
+    } catch (err) {
+      setError(err instanceof ApiResponseError ? err.message : "Không thể xóa hợp đồng");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const confirmContractSigning = async () => {
+    if (!data?.item || busy) {
+      return;
+    }
+
+    try {
+      setBusy(true);
+      await apiFetch(`/contracts/${encodeURIComponent(data.item.maHopDong)}/sign`, {
+        method: "POST",
+      });
+      setSignConfirmOpen(false);
+      await loadData();
+    } catch (err) {
+      setError(err instanceof ApiResponseError ? err.message : "Không thể xác nhận ký hợp đồng");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const closePreview = () => {
+    setPreviewOpen(false);
+    setPreviewError(null);
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(null);
+    }
+  };
+
+  const openContractPreview = async () => {
+    if (!data?.item || previewLoading) {
+      return;
+    }
+
+    setPreviewOpen(true);
+    setPreviewLoading(true);
+    setPreviewError(null);
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(null);
+    }
+
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/api/contracts/${encodeURIComponent(data.item.maHopDong)}/preview.pdf`,
+        { headers: getAuthHeaders() }
+      );
+
+      if (!res.ok) {
+        let message = `HTTP ${res.status}`;
+        try {
+          const body = await res.json();
+          message = body?.error?.message ?? message;
+        } catch {
+          // ignore parse error
+        }
+        throw new Error(message);
+      }
+
+      const blob = await res.blob();
+      setPreviewUrl(URL.createObjectURL(blob));
+    } catch (err) {
+      setPreviewError(err instanceof Error ? err.message : "Khong the tai preview hop dong");
+    } finally {
+      setPreviewLoading(false);
     }
   };
 
@@ -186,13 +307,39 @@ export function ContractDetail() {
 
         {data?.item && (
           <div className="flex gap-2">
-            <Link
-              to={`/contracts/${encodeURIComponent(data.item.maHopDong)}/edit`}
-              className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            <button
+              type="button"
+              onClick={() => !data.item.daKy && setDeleteConfirmOpen(true)}
+              disabled={data.item.daKy || busy}
+              className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
+                data.item.daKy
+                  ? "border border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
+                  : "border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 disabled:opacity-60"
+              }`}
+              title={data.item.daKy ? "Hợp đồng đã xác nhận ký nên không thể xóa" : "Xóa hợp đồng"}
             >
-              <Edit className="w-4 h-4" />
-              Chỉnh sửa
-            </Link>
+              <Trash2 className="w-4 h-4" />
+              Xóa hợp đồng
+            </button>
+            {data.item.daKy ? (
+              <button
+                type="button"
+                disabled
+                className="inline-flex items-center gap-2 px-3 py-2 border border-gray-200 bg-gray-100 text-gray-400 rounded-lg text-sm cursor-not-allowed"
+                title="Hợp đồng đã xác nhận ký nên không thể chỉnh sửa"
+              >
+                <Edit className="w-4 h-4" />
+                Chỉnh sửa
+              </button>
+            ) : (
+              <Link
+                to={`/contracts/${encodeURIComponent(data.item.maHopDong)}/edit`}
+                className="inline-flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              >
+                <Edit className="w-4 h-4" />
+                Chỉnh sửa
+              </Link>
+            )}
             {data.item.trangThai === "DANG_HIEU_LUC" && (
               <button
                 type="button"
@@ -207,6 +354,138 @@ export function ContractDetail() {
           </div>
         )}
       </div>
+
+      {previewOpen && data?.item && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3">
+          <div className="absolute inset-0 bg-black/50" onClick={closePreview} />
+          <div
+            className="relative bg-white rounded-xl shadow-xl flex flex-col overflow-hidden"
+            style={{
+              width: "min(96vw, 1440px)",
+              height: "calc(100vh - 200px)",
+              minWidth: "1100px",
+              minHeight: "560px",
+            }}
+          >
+            <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-gray-200">
+              <div>
+                <h3 className="text-base font-bold text-gray-900">Preview Hợp đồng</h3>
+                <p className="text-xs text-gray-500">{data.item.maHopDong}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                {previewUrl && (
+                  <a
+                    href={previewUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg text-sm"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Mở PDF
+                  </a>
+                )}
+                <button
+                  type="button"
+                  onClick={closePreview}
+                  className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
+                  aria-label="Đóng preview"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 bg-gray-100">
+              {previewLoading && (
+                <div className="h-full flex items-center justify-center gap-2 text-gray-600">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Đang tải PDF...
+                </div>
+              )}
+              {!previewLoading && previewError && (
+                <div className="h-full flex items-center justify-center p-6">
+                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                    {previewError}
+                  </div>
+                </div>
+              )}
+              {!previewLoading && !previewError && previewUrl && (
+                <iframe
+                  title="Preview hợp đồng PDF"
+                  src={`${previewUrl}#toolbar=1&navpanes=0&zoom=page-width`}
+                  className="w-full h-full border-0"
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteConfirmOpen && data?.item && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setDeleteConfirmOpen(false)} />
+          <div className="relative bg-white rounded-xl shadow-xl p-6 w-full max-w-lg mx-4 space-y-5">
+            <div>
+              <h3 className="text-lg font-bold text-gray-900">Xóa hợp đồng</h3>
+              <p className="text-sm text-gray-500 mt-1">{data.item.maHopDong}</p>
+            </div>
+            <p className="text-sm leading-6 text-gray-700">
+              Bạn có chắc muốn xóa hợp đồng này khỏi DB không? Các hóa đơn liên quan đến hợp đồng này cũng sẽ bị xóa.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmOpen(false)}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-sm"
+                disabled={busy}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void deleteContract()}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm disabled:opacity-60"
+                disabled={busy}
+              >
+                {busy ? "Đang xử lý..." : "Xác nhận"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {signConfirmOpen && data?.item && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setSignConfirmOpen(false)} />
+          <div className="relative bg-white rounded-xl shadow-xl p-6 w-full max-w-lg mx-4 space-y-5">
+            <div>
+              <h3 className="text-lg font-bold text-gray-900">Xác nhận ký hợp đồng</h3>
+              <p className="text-sm text-gray-500 mt-1">{data.item.maHopDong}</p>
+            </div>
+            <p className="text-sm leading-6 text-gray-700">
+              Bên cho thuê <span className="font-semibold text-gray-900">{authUser?.hoTen ?? "chủ trọ"}</span> và bên thuê{" "}
+              <span className="font-semibold text-gray-900">{data.item.tenNguoiDaiDien}</span> đã ký hợp đồng chưa?
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setSignConfirmOpen(false)}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-sm"
+                disabled={busy}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void confirmContractSigning()}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm disabled:opacity-60"
+                disabled={busy}
+              >
+                {busy ? "Đang xử lý..." : "Xác nhận"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {terminateDate !== null && data?.item && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -269,11 +548,51 @@ export function ContractDetail() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-white border border-gray-200 rounded-xl p-6">
-              <h2 className="text-base font-bold text-gray-900 mb-4">Thông tin hợp đồng</h2>
+              <div className="flex items-center justify-between gap-3 mb-4">
+                <h2 className="text-base font-bold text-gray-900">Thông tin hợp đồng</h2>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={openContractPreview}
+                    disabled={previewLoading}
+                    className="inline-flex items-center gap-2 px-3 py-2 border border-blue-200 bg-blue-50 text-blue-700 rounded-lg text-sm disabled:opacity-60"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Preview Hợp đồng
+                  </button>
+                  {data.item.daKy ? (
+                    <button
+                      type="button"
+                      disabled
+                      className="inline-flex items-center gap-2 px-3 py-2 border border-green-200 bg-green-50 text-green-700 rounded-lg text-sm cursor-not-allowed"
+                      title={data.item.ngayKy ? `Đã xác nhận ký ngày ${formatDate(data.item.ngayKy)}` : "Đã xác nhận ký"}
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                      Đã ký
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setSignConfirmOpen(true)}
+                      disabled={busy}
+                      className="inline-flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg text-sm disabled:opacity-60"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                      Xác nhận ký
+                    </button>
+                  )}
+                </div>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div>
                   <p className="text-gray-500">Trạng thái</p>
                   <p className="font-semibold">{statusLabel(data.item.trangThai)}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Xác nhận ký</p>
+                  <p className={data.item.daKy ? "font-semibold text-green-700" : "font-semibold text-gray-700"}>
+                    {data.item.daKy ? `Đã ký${data.item.ngayKy ? ` - ${formatDate(data.item.ngayKy)}` : ""}` : "Chưa ký"}
+                  </p>
                 </div>
                 <div>
                   <p className="text-gray-500">Người đại diện</p>

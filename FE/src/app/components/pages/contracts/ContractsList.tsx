@@ -17,6 +17,8 @@ interface ContractListItemDto {
   tienThue: number;
   tienCoc: number;
   trangThai: ContractStatusApi;
+  daKy: boolean;
+  ngayKy: string | null;
   soNguoiThue: number;
   soHoaDon: number;
   soHoaDonChuaThanhToan: number;
@@ -340,6 +342,7 @@ export function ContractsList() {
             <tbody className="divide-y divide-gray-100 text-sm">
               {displayItems.map((item) => {
                 const label = computedStatusLabel(item.trangThai, item.ngayKetThuc);
+                const canEdit = !item.daKy && item.trangThai !== "DA_KET_THUC";
                 return (
                   <tr key={item.maHopDong} className="hover:bg-gray-50">
                     <td className="px-4 py-3 font-mono font-semibold text-blue-700">{item.maHopDong}</td>
@@ -375,9 +378,11 @@ export function ContractsList() {
                         <Link to={`/contracts/${encodeURIComponent(item.maHopDong)}`} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg" title="Xem chi tiết">
                           <Eye className="w-4 h-4" />
                         </Link>
-                        <Link to={`/contracts/${encodeURIComponent(item.maHopDong)}/edit`} className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg" title="Chỉnh sửa">
-                          <Edit className="w-4 h-4" />
-                        </Link>
+                        {canEdit && (
+                          <Link to={`/contracts/${encodeURIComponent(item.maHopDong)}/edit`} className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg" title="Chỉnh sửa">
+                            <Edit className="w-4 h-4" />
+                          </Link>
+                        )}
                         {item.trangThai === "DANG_HIEU_LUC" && (
                           <button
                             type="button"

@@ -5,7 +5,12 @@ export const roomIdParamSchema = z.object({
 });
 
 const roomBaseSchema = {
-  maNhaTro: z.string().min(1, "maNhaTro is required").max(20, "maNhaTro max 20 chars"),
+  maNhaTro: z
+    .string()
+    .min(1, "maNhaTro is required")
+    .max(20, "maNhaTro max 20 chars")
+    .regex(/^NT\d{3}$/, "maNhaTro must match NT### pattern")
+    .optional(),
   tenNhaTro: z.string().min(1, "tenNhaTro is required").max(150),
   diaChi: z.string().min(1, "diaChi is required").max(255),
   dienTich: z.coerce.number().positive("dienTich must be > 0"),

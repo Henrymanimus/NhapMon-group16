@@ -28,6 +28,8 @@ type ContractListRow = RowDataPacket & {
   SoHoaDon: number;
   SoHoaDonChuaThanhToan: number;
   NgayTao: Date;
+  DaKy: number;
+  NgayKy: Date | null;
 };
 
 type ContractTenantRow = RowDataPacket & {
@@ -48,6 +50,45 @@ type ContractInvoiceRow = RowDataPacket & {
   TongTien: number;
   TrangThai: "CHUA_THANH_TOAN" | "DA_THANH_TOAN";
   HanThanhToan: Date | null;
+};
+
+type ContractPrintRow = RowDataPacket & {
+  MaHopDong: string;
+  NgayTao: Date;
+  NgayBatDau: Date;
+  NgayKetThuc: Date | null;
+  TienThue: number;
+  TienCoc: number;
+  GhiChu: string | null;
+  TrangThai: ContractStatus;
+  ChuTro_HoTen: string;
+  ChuTro_SoDienThoai: string;
+  ChuTro_Email: string | null;
+  ChuTro_DiaChi: string | null;
+  MaNhaTro: string;
+  TenNhaTro: string;
+  NhaTro_DiaChi: string;
+  DienTich: number;
+  GiaThueMacDinh: number;
+  TienCocMacDinh: number;
+  TienNghi: string | null;
+  NhaTro_MoTa: string | null;
+  NguoiDaiDien_MaNguoiThue: string;
+  NguoiDaiDien_HoTen: string;
+  NguoiDaiDien_NgaySinh: Date | null;
+  NguoiDaiDien_CCCD: string;
+  NguoiDaiDien_SoDienThoai: string;
+  NguoiDaiDien_Email: string | null;
+  NguoiDaiDien_DiaChi: string | null;
+};
+
+type ContractPrintTenantRow = RowDataPacket & {
+  MaNguoiThue: string;
+  HoTen: string;
+  CCCD: string;
+  SoDienThoai: string;
+  VaiTro: TenantRole;
+  TrangThai: TenantStayStatus;
 };
 
 type RoomOptionRow = RowDataPacket & {
@@ -78,6 +119,8 @@ type ContractIdentityRow = RowDataPacket & {
   TienCoc: number;
   TrangThai: ContractStatus;
   GhiChu: string | null;
+  DaKy: number;
+  NgayKy: Date | null;
 };
 
 type ParticipantInput = {
@@ -104,6 +147,50 @@ export type UpdateContractInput = Partial<CreateContractInput> & {
 export type TerminateContractInput = {
   ngayKetThuc: string;
   ghiChu?: string | null;
+};
+
+export type ContractPrintData = {
+  maHopDong: string;
+  ngayLapHopDong: Date;
+  ngayBatDau: Date;
+  ngayKetThuc: Date | null;
+  tienThue: number;
+  tienCoc: number;
+  ghiChu: string | null;
+  trangThai: ContractStatus;
+  chuTro: {
+    hoTen: string;
+    soDienThoai: string;
+    email: string | null;
+    diaChi: string | null;
+  };
+  phong: {
+    maNhaTro: string;
+    tenNhaTro: string;
+    diaChi: string;
+    dienTich: number;
+    giaThueMacDinh: number;
+    tienCocMacDinh: number;
+    tienNghi: string | null;
+    moTa: string | null;
+  };
+  nguoiDaiDien: {
+    maNguoiThue: string;
+    hoTen: string;
+    ngaySinh: Date | null;
+    cccd: string;
+    soDienThoai: string;
+    email: string | null;
+    diaChi: string | null;
+  };
+  nguoiThue: Array<{
+    maNguoiThue: string;
+    hoTen: string;
+    cccd: string;
+    soDienThoai: string;
+    vaiTro: TenantRole;
+    trangThai: TenantStayStatus;
+  }>;
 };
 
 function normalizeNullableString(value?: string | null): string | null {
@@ -142,6 +229,8 @@ function mapContractListDto(row: ContractListRow) {
     soHoaDon: Number(row.SoHoaDon ?? 0),
     soHoaDonChuaThanhToan: Number(row.SoHoaDonChuaThanhToan ?? 0),
     ngayTao: row.NgayTao,
+    daKy: Boolean(row.DaKy),
+    ngayKy: row.NgayKy,
   };
 }
 
@@ -233,7 +322,9 @@ async function ensureContractOwned(conn: PoolConnection, maHopDong: string, maCh
         hd.TienThue,
         hd.TienCoc,
         hd.TrangThai,
-        hd.GhiChu
+        hd.GhiChu,
+        COALESCE(hd.DaKy, 0) AS DaKy,
+        hd.NgayKy
       FROM HOPDONG hd
       INNER JOIN NHATRO n ON n.MaNhaTro = hd.MaNhaTro
       WHERE hd.MaHopDong = ?
@@ -367,6 +458,8 @@ async function fetchContractListRows(
         hd.GhiChu,
         hd.TrangThai,
         hd.NgayTao,
+        COALESCE(hd.DaKy, 0) AS DaKy,
+        hd.NgayKy,
         COUNT(hdnt.MaNguoiThue) AS SoNguoiThue,
         COUNT(DISTINCT hdon.MaHoaDon) AS SoHoaDon,
         COUNT(DISTINCT CASE WHEN hdon.TrangThai = 'CHUA_THANH_TOAN' THEN hdon.MaHoaDon END) AS SoHoaDonChuaThanhToan
@@ -389,7 +482,9 @@ async function fetchContractListRows(
         hd.TienCoc,
         hd.GhiChu,
         hd.TrangThai,
-        hd.NgayTao
+        hd.NgayTao,
+        hd.DaKy,
+        hd.NgayKy
       ORDER BY hd.NgayBatDau DESC, hd.MaHopDong DESC
     `,
     params as any
@@ -485,6 +580,119 @@ export async function getContract(maHopDong: string, maChuTro: string) {
     congNo: {
       tongNo: Number(debtRows[0]?.TongNo ?? 0),
     },
+  };
+}
+
+export async function getContractPrintData(maHopDong: string, maChuTro: string): Promise<ContractPrintData> {
+  const [contractRows] = await pool.query<ContractPrintRow[]>(
+    `
+      SELECT
+        hd.MaHopDong,
+        hd.NgayTao,
+        hd.NgayBatDau,
+        hd.NgayKetThuc,
+        hd.TienThue,
+        hd.TienCoc,
+        hd.GhiChu,
+        hd.TrangThai,
+        ct.HoTen AS ChuTro_HoTen,
+        ct.SoDienThoai AS ChuTro_SoDienThoai,
+        ct.Email AS ChuTro_Email,
+        ct.DiaChi AS ChuTro_DiaChi,
+        n.MaNhaTro,
+        n.TenNhaTro,
+        n.DiaChi AS NhaTro_DiaChi,
+        n.DienTich,
+        n.GiaThue AS GiaThueMacDinh,
+        n.TienCoc AS TienCocMacDinh,
+        n.TienNghi,
+        n.MoTa AS NhaTro_MoTa,
+        nd.MaNguoiThue AS NguoiDaiDien_MaNguoiThue,
+        nd.HoTen AS NguoiDaiDien_HoTen,
+        nd.NgaySinh AS NguoiDaiDien_NgaySinh,
+        nd.CCCD AS NguoiDaiDien_CCCD,
+        nd.SoDienThoai AS NguoiDaiDien_SoDienThoai,
+        nd.Email AS NguoiDaiDien_Email,
+        nd.DiaChi AS NguoiDaiDien_DiaChi
+      FROM HOPDONG hd
+      INNER JOIN NHATRO n ON n.MaNhaTro = hd.MaNhaTro
+      INNER JOIN CHUTRO ct ON ct.MaChuTro = n.MaChuTro
+      INNER JOIN NGUOITHUE nd ON nd.MaNguoiThue = hd.MaNguoiDaiDien
+      WHERE hd.MaHopDong = ?
+        AND n.MaChuTro = ?
+        AND n.IsDeleted = 0
+      LIMIT 1
+    `,
+    [maHopDong, maChuTro]
+  );
+
+  const contract = contractRows[0];
+  if (!contract) {
+    throw new ApiError(404, "CONTRACT_NOT_FOUND", "KhÃ´ng tÃ¬m tháº¥y há»£p Ä‘á»“ng");
+  }
+
+  const [tenantRows] = await pool.query<ContractPrintTenantRow[]>(
+    `
+      SELECT
+        nt.MaNguoiThue,
+        nt.HoTen,
+        nt.CCCD,
+        nt.SoDienThoai,
+        hdnt.VaiTro,
+        hdnt.TrangThai
+      FROM HOPDONG_NGUOITHUE hdnt
+      INNER JOIN NGUOITHUE nt ON nt.MaNguoiThue = hdnt.MaNguoiThue
+      WHERE hdnt.MaHopDong = ?
+      ORDER BY
+        CASE WHEN hdnt.VaiTro = 'DAI_DIEN' THEN 0 ELSE 1 END,
+        hdnt.NgayThamGia ASC,
+        nt.HoTen ASC
+    `,
+    [maHopDong]
+  );
+
+  return {
+    maHopDong: contract.MaHopDong,
+    ngayLapHopDong: contract.NgayTao ?? new Date(),
+    ngayBatDau: contract.NgayBatDau,
+    ngayKetThuc: contract.NgayKetThuc,
+    tienThue: Number(contract.TienThue ?? 0),
+    tienCoc: Number(contract.TienCoc ?? 0),
+    ghiChu: contract.GhiChu,
+    trangThai: contract.TrangThai,
+    chuTro: {
+      hoTen: contract.ChuTro_HoTen,
+      soDienThoai: contract.ChuTro_SoDienThoai,
+      email: contract.ChuTro_Email,
+      diaChi: contract.ChuTro_DiaChi,
+    },
+    phong: {
+      maNhaTro: contract.MaNhaTro,
+      tenNhaTro: contract.TenNhaTro,
+      diaChi: contract.NhaTro_DiaChi,
+      dienTich: Number(contract.DienTich ?? 0),
+      giaThueMacDinh: Number(contract.GiaThueMacDinh ?? 0),
+      tienCocMacDinh: Number(contract.TienCocMacDinh ?? 0),
+      tienNghi: contract.TienNghi,
+      moTa: contract.NhaTro_MoTa,
+    },
+    nguoiDaiDien: {
+      maNguoiThue: contract.NguoiDaiDien_MaNguoiThue,
+      hoTen: contract.NguoiDaiDien_HoTen,
+      ngaySinh: contract.NguoiDaiDien_NgaySinh,
+      cccd: contract.NguoiDaiDien_CCCD,
+      soDienThoai: contract.NguoiDaiDien_SoDienThoai,
+      email: contract.NguoiDaiDien_Email,
+      diaChi: contract.NguoiDaiDien_DiaChi,
+    },
+    nguoiThue: tenantRows.map((row) => ({
+      maNguoiThue: row.MaNguoiThue,
+      hoTen: row.HoTen,
+      cccd: row.CCCD,
+      soDienThoai: row.SoDienThoai,
+      vaiTro: row.VaiTro,
+      trangThai: row.TrangThai,
+    })),
   };
 }
 
@@ -634,6 +842,13 @@ export async function updateContract(maHopDong: string, input: UpdateContractInp
     await conn.beginTransaction();
 
     const existing = await ensureContractOwned(conn, maHopDong, maChuTro);
+    if (Number(existing.DaKy ?? 0) === 1) {
+      throw new ApiError(
+        409,
+        "CONTRACT_ALREADY_SIGNED",
+        "Hợp đồng đã xác nhận ký nên không thể chỉnh sửa"
+      );
+    }
 
     const nextRoomId = input.maNhaTro ?? existing.MaNhaTro;
     const nextRepresentative = input.maNguoiDaiDien ?? existing.MaNguoiDaiDien;
@@ -809,6 +1024,83 @@ export async function terminateContract(maHopDong: string, input: TerminateContr
           AND TrangThai = 'DANG_O'
       `,
       [input.ngayKetThuc, maHopDong]
+    );
+
+    await conn.commit();
+
+    const updated = await getContract(maHopDong, maChuTro);
+    return updated.item;
+  } catch (err) {
+    await conn.rollback();
+    const mapped = mapMysqlContractError(err);
+    if (mapped) {
+      throw mapped;
+    }
+    throw err;
+  } finally {
+    conn.release();
+  }
+}
+
+export async function deleteContract(maHopDong: string, maChuTro: string) {
+  const conn = await pool.getConnection();
+
+  try {
+    await conn.beginTransaction();
+
+    const contract = await ensureContractOwned(conn, maHopDong, maChuTro);
+    if (Number(contract.DaKy ?? 0) === 1) {
+      throw new ApiError(409, "CONTRACT_ALREADY_SIGNED", "Hợp đồng đã xác nhận ký nên không thể xóa");
+    }
+
+    await conn.execute<ResultSetHeader>(
+      `
+        DELETE FROM HOADON
+        WHERE MaHopDong = ?
+      `,
+      [maHopDong]
+    );
+
+    await conn.execute<ResultSetHeader>(
+      `
+        DELETE FROM HOPDONG
+        WHERE MaHopDong = ?
+      `,
+      [maHopDong]
+    );
+
+    await conn.commit();
+  } catch (err) {
+    await conn.rollback();
+    const mapped = mapMysqlContractError(err);
+    if (mapped) {
+      throw mapped;
+    }
+    throw err;
+  } finally {
+    conn.release();
+  }
+}
+
+export async function confirmContractSigned(maHopDong: string, maChuTro: string) {
+  const conn = await pool.getConnection();
+
+  try {
+    await conn.beginTransaction();
+
+    const contract = await ensureContractOwned(conn, maHopDong, maChuTro);
+    if (Number(contract.DaKy ?? 0) === 1) {
+      throw new ApiError(409, "CONTRACT_ALREADY_SIGNED", "Hợp đồng đã được xác nhận ký");
+    }
+
+    await conn.execute<ResultSetHeader>(
+      `
+        UPDATE HOPDONG
+        SET DaKy = 1,
+            NgayKy = CURRENT_TIMESTAMP
+        WHERE MaHopDong = ?
+      `,
+      [maHopDong]
     );
 
     await conn.commit();
