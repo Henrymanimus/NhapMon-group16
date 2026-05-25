@@ -31,3 +31,4 @@ Thumbs.db
 
 # ===== BMAD / AI planning artifacts (keep output docs, skip heavy config) =====
 _bmad/
+_bmad-output/
