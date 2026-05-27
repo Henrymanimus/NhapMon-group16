@@ -32,3 +32,11 @@ Thumbs.db
 # ===== BMAD / AI planning artifacts (keep output docs, skip heavy config) =====
 _bmad/
 _bmad-output/
+
+# ===== Submission cleanup: do not track generated/legacy helper assets =====
+.github/
+BE/README.md
+BE/database/README.md
+BE/database/migrations/
+BE/database/seeds/
+BE/database/verify/
