@@ -253,6 +253,40 @@ Update this file at the end of each completed module to keep AI context stable a
 1. Reports module
   - Reporting polish and consistency checks across modules
 
+### [DONE] Rooms edit/delete lock for occupied rooms - 2026-05-27
+- Scope:
+  - Block editing/deleting rooms whose display status is `Đang thuê`.
+- Completed:
+  - BE: `updateRoom` now rejects all edits when the room has an active contract.
+  - BE: `deleteRoom` now rejects occupied rooms before historical contract/invoice checks.
+  - FE: room detail disables `Xóa phòng` and `Chỉnh sửa` when room status is `Đang thuê`.
+  - FE: rooms list hides edit/delete actions for occupied rooms.
+  - Docs: `docs/SRS/03_NTR.md` updated with the occupied-room edit/delete rule.
+- Validation:
+  - BE `npm.cmd run typecheck`: PASS on 2026-05-27.
+  - FE `npm.cmd run build`: PASS on 2026-05-27.
+  - API smoke test on occupied room `NT002`: update/delete both return `409` with occupied-room lock errors.
+
+### [DONE] Contracts list cleanup - 2026-05-27
+- Scope:
+  - Remove visible canceled-contract UI where there is no cancel-contract business flow.
+- Completed:
+  - FE: removed the `Đã hủy` statistics card from the contracts list.
+  - FE: removed the `Đã hủy` status option from the contracts filter.
+  - Docs: `docs/SRS/05_HD.md` updated to remove canceled-contract card/filter/action references from the contract list workflow.
+- Validation:
+  - FE `npm.cmd run build`: PASS on 2026-05-27.
+
+### [DONE] Submission database seed - 2026-05-27
+- Scope:
+  - Provide sample data for teachers/demo after running the final schema.
+- Completed:
+  - Added `BE/database/seed_data.sql` with sample rooms, tenants, contracts, contract participants, and invoices.
+  - Updated `BE/database/final_schema.sql` demo account password to a bcrypt hash for `123456`.
+  - Updated `README.md` with the optional `SOURCE database/seed_data.sql;` step.
+- Validation:
+  - Bcrypt hash verified against password `123456`.
+
 ## UI Enhancements Log (2026-05-05)
 - **Dashboard**:
   - Revenue summary strip (TB/tháng, Cao nhất, Tổng 7T) changed to horizontal flex with dividers
@@ -266,7 +300,7 @@ Update this file at the end of each completed module to keep AI context stable a
   - BE `contracts.service.ts` updated to SELECT and expose `ngayTao`
   - Added "Ngày tạo" column in FE table
   - Added sort toggle (Asc/Desc) on Ngày tạo column
-  - Added auto-sort by status: Sắp hết hạn → Đang hiệu lực → Đã kết thúc → Đã hủy
+  - Added auto-sort by status: Sắp hết hạn → Đang hiệu lực → Đã kết thúc
 
 ## Decisions
 - Use this file as mandatory checkpoint after each module completion.

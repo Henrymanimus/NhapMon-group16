@@ -364,5 +364,5 @@ DELIMITER ;
 -- 9. Dữ liệu khởi tạo (chủ trọ demo)
 -- =============================================================
 INSERT INTO CHUTRO (MaChuTro, HoTen, SoDienThoai, Email, TenDangNhap, MatKhau, DiaChi)
-VALUES ('CT001', 'Nguyen Van Chu Tro', '0900000001', 'chutro1@example.com', 'chutro001', '123456', 'Ha Noi')
+VALUES ('CT001', 'Nguyen Van Chu Tro', '0900000001', 'chutro1@example.com', 'chutro001', '$2a$10$b7hvxGZWJDu8wUqQhyDD6e5uAwpZg7tWMbHql6N.ZJFe2ogwchGEW', 'Ha Noi')
 ON DUPLICATE KEY UPDATE HoTen = VALUES(HoTen);

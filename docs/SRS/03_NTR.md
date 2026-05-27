@@ -217,6 +217,7 @@ WHERE h.MaNhaTro = @MaNhaTro;**
 
 **Rule**
 
+- **Không cho chỉnh sửa phòng khi trạng thái hiển thị là "Đang thuê"**
 - **Không sửa trạng thái nếu có hợp đồng active**
 - **Giá thuê có thể update → áp dụng hợp đồng mới**
 
@@ -226,6 +227,7 @@ WHERE h.MaNhaTro = @MaNhaTro;**
 
 **❌ Không xóa nếu có:**
 
+- **Phòng đang ở trạng thái "Đang thuê"**
 - **Hợp đồng**
 - **Hóa đơn**
 

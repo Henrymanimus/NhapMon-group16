@@ -511,15 +511,13 @@ export async function createRoom(input: CreateRoomInput, maChuTro: string) {
 export async function updateRoom(maNhaTro: string, input: UpdateRoomInput, maChuTro: string) {
   await assertRoomExists(maNhaTro, maChuTro);
 
-  if (Object.prototype.hasOwnProperty.call(input, "trangThai")) {
-    const activeContractCount = await getActiveContractCount(maNhaTro);
-    if (activeContractCount > 0) {
-      throw new ApiError(
-        409,
-        "ROOM_STATUS_LOCKED_BY_ACTIVE_CONTRACT",
-        "Không thể cập nhật trạng thái khi phòng đang có hợp đồng hiệu lực"
-      );
-    }
+  const activeContractCount = await getActiveContractCount(maNhaTro);
+  if (activeContractCount > 0) {
+    throw new ApiError(
+      409,
+      "ROOM_UPDATE_BLOCKED_BY_ACTIVE_CONTRACT",
+      "Không thể chỉnh sửa phòng đang thuê"
+    );
   }
 
   const fields: string[] = [];
@@ -562,6 +560,15 @@ export async function updateRoom(maNhaTro: string, input: UpdateRoomInput, maChu
 
 export async function deleteRoom(maNhaTro: string, maChuTro: string) {
   await assertRoomExists(maNhaTro, maChuTro);
+
+  const activeContractCount = await getActiveContractCount(maNhaTro);
+  if (activeContractCount > 0) {
+    throw new ApiError(
+      409,
+      "ROOM_DELETE_BLOCKED_BY_ACTIVE_CONTRACT",
+      "Không thể xóa phòng đang thuê"
+    );
+  }
 
   const [contractRows] = await pool.query<CountRow[]>(
     `

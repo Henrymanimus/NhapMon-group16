@@ -5,14 +5,14 @@ Dự án gồm hai phần độc lập:
 | Thư mục | Công nghệ | Cổng mặc định |
 |---------|-----------|---------------|
 | `BE/`   | Express + TypeScript + MySQL | 4000 |
-| `FE/`   | React + Vite + Tailwind CSS  | 5173 |
+| `FE/`   | React + Vite | 5173 |
 
 ---
 
 ## Yêu cầu hệ thống
 
 - **Node.js** ≥ 18 (Windows: dùng bản cài đặt từ [nodejs.org](https://nodejs.org), **không** dùng qua MSYS/WSL)
-- **MySQL** 8.x đang chạy trên máy
+- **MySQL** 8.x đang chạy trên máy, nên dùng MySQL workbench
 - **npm** đi kèm Node.js
 
 ---
@@ -32,8 +32,7 @@ cd NhapMon-group16
 
 ```bash
 cd BE
-copy .env.example .env   # Windows
-# hoặc: cp .env.example .env   (Linux/macOS)
+copy .env.example .env
 ```
 
 Mở file `.env` và điền thông tin cơ sở dữ liệu:
@@ -48,13 +47,13 @@ DB_NAME=rental_house_management
 JWT_SECRET=change_me_to_a_long_random_secret
 JWT_EXPIRES_IN=8h
 
-# Chỉ dùng nếu cần gửi OTP quên mật khẩu qua email
-SMTP_HOST=
+# Chỉ dùng nếu cần gửi OTP quên mật khẩu qua email (dưới đây là cấu hình Gmail SMTP có sẵn)
+SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_SECURE=false
-SMTP_USER=
-SMTP_PASS=
-SMTP_FROM=
+SMTP_USER=vubuiminhhieu2000@gmail.com
+SMTP_PASS=jmfvqddgrolpclkx
+SMTP_FROM="Nha Tro Pro <vubuiminhhieu2000@gmail.com>"
 ```
 
 ### 2.2 Tạo database
@@ -67,7 +66,12 @@ USE rental_house_management;
 SOURCE database/final_schema.sql;
 ```
 
-> Nếu muốn có dữ liệu mẫu, chạy thêm file seed trong `database/seeds/` (không có trong repo, tự tạo theo nhu cầu).
+File `final_schema.sql` đã có sẵn tài khoản demo `chutro001` / `123456`.
+Nếu muốn có thêm dữ liệu mẫu để thao tác demo, chạy tiếp:
+
+```sql
+SOURCE database/seed_data.sql;
+```
 
 ### 2.3 Cài dependencies và khởi động
 

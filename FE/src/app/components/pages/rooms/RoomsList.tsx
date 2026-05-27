@@ -367,6 +367,7 @@ export function RoomsList() {
             <tbody className="divide-y divide-gray-100">
               {paginated.map((room) => {
                 const sc = statusConfig[room.status];
+                const canModifyRoom = room.status !== "Đang thuê";
                 return (
                   <tr
                     key={room.id}
@@ -425,20 +426,24 @@ export function RoomsList() {
                         >
                           <Eye className="w-4 h-4" />
                         </Link>
-                        <Link
-                          to={`/rooms/${encodeURIComponent(room.id)}/edit`}
-                          className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
-                          title="Chỉnh sửa"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Link>
-                        <button
-                          onClick={() => setDeletingRoom(room)}
-                          className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Xóa"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {canModifyRoom && (
+                          <>
+                            <Link
+                              to={`/rooms/${encodeURIComponent(room.id)}/edit`}
+                              className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
+                              title="Chỉnh sửa"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Link>
+                            <button
+                              onClick={() => setDeletingRoom(room)}
+                              className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Xóa"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>

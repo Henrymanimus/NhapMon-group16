@@ -227,7 +227,6 @@ export function ContractsList() {
       active: statusLabels.filter((s) => s === "Đang hiệu lực").length,
       expiring: statusLabels.filter((s) => s === "Sắp hết hạn").length,
       ended: statusLabels.filter((s) => s === "Đã kết thúc").length,
-      canceled: statusLabels.filter((s) => s === "Đã hủy").length,
     };
   }, [items]);
 
@@ -273,12 +272,11 @@ export function ContractsList() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white border border-gray-200 rounded-xl p-4"><p className="text-sm text-gray-500">Tổng HĐ</p><p className="text-2xl font-bold">{stats.total}</p></div>
         <div className="bg-white border border-gray-200 rounded-xl p-4"><p className="text-sm text-gray-500">Đang hiệu lực</p><p className="text-2xl font-bold text-green-700">{stats.active}</p></div>
         <div className="bg-white border border-gray-200 rounded-xl p-4"><p className="text-sm text-gray-500">Sắp hết hạn</p><p className="text-2xl font-bold text-orange-700">{stats.expiring}</p></div>
         <div className="bg-white border border-gray-200 rounded-xl p-4"><p className="text-sm text-gray-500">Đã kết thúc</p><p className="text-2xl font-bold text-gray-700">{stats.ended}</p></div>
-        <div className="bg-white border border-gray-200 rounded-xl p-4"><p className="text-sm text-gray-500">Đã hủy</p><p className="text-2xl font-bold text-red-700">{stats.canceled}</p></div>
       </div>
 
       <div className="bg-white border border-gray-200 rounded-xl p-4 grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -300,7 +298,6 @@ export function ContractsList() {
           <option value="Đang hiệu lực">Đang hiệu lực</option>
           <option value="Sắp hết hạn">Sắp hết hạn</option>
           <option value="Đã kết thúc">Đã kết thúc</option>
-          <option value="Đã hủy">Đã hủy</option>
         </select>
       </div>
 

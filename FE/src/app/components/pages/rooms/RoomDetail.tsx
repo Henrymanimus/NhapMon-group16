@@ -172,6 +172,7 @@ export function RoomDetail() {
   const representative = nguoiDangO.find((o) => o.vaiTro === "Đại diện") ?? null;
   const coTenants = nguoiDangO.filter((o) => o.vaiTro === "Ở cùng");
   const activeContract = lichSuHopDong.find((c) => c.trangThai === "Đang hiệu lực") ?? null;
+  const isOccupied = item.trangThai === "DANG_THUE";
 
   return (
     <div className="space-y-6">
@@ -254,19 +255,35 @@ export function RoomDetail() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setShowDeleteModal(true)}
-            className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm"
+            onClick={() => {
+              if (!isOccupied) setShowDeleteModal(true);
+            }}
+            disabled={isOccupied || deleting}
+            title={isOccupied ? "Không thể xóa phòng đang thuê" : "Xóa phòng"}
+            className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-red-600"
           >
             {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
             Xóa phòng
           </button>
-          <Link
-            to={`/rooms/${encodeURIComponent(roomId)}/edit`}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm"
-          >
-            <Edit className="w-4 h-4" />
-            Chỉnh sửa
-          </Link>
+          {isOccupied ? (
+            <button
+              type="button"
+              disabled
+              title="Không thể chỉnh sửa phòng đang thuê"
+              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm opacity-50 cursor-not-allowed"
+            >
+              <Edit className="w-4 h-4" />
+              Chỉnh sửa
+            </button>
+          ) : (
+            <Link
+              to={`/rooms/${encodeURIComponent(roomId)}/edit`}
+              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm"
+            >
+              <Edit className="w-4 h-4" />
+              Chỉnh sửa
+            </Link>
+          )}
         </div>
       </div>
 
